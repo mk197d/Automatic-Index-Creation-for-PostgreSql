@@ -1,0 +1,17 @@
+Title: Automatic Index Creation and Caching for Optimization 
+
+Team Members:
+1. Saksham Rathi -- 22B1003
+2. Kavya Gupta -- 22B1053
+3. Mayank Kumar -- 22B0933
+4. Shravan Srinivasa Raghavan -- 22B1054
+
+Category of the project chosen = Premium
+
+Project Proposal:
+Modern database applications often require a caching layer separate from the primary database to improve performance and scalability. However, maintaining consistency between the cache and the primary database adds complexity. Additionally, optimizing query performance through index creation is often a manual process. This project aims to integrate these aspects by modifying PostgreSQL to act as a self-optimizing database that manages local caching and automatic index creation.
+
+Objective:
+Our project proposes a modification to PostgreSQL that will:
+1. Act as a Local Cache: Maintain a local copy of selected relations or parts of relations, synchronizing them with the master database to improve query performance while ensuring data consistency.
+2. Automatic Index Creation: Identify frequently scanned relations that would benefit from an index and create indexes dynamically when the cost-benefit condition is met.
