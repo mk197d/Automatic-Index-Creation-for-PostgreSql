@@ -1,0 +1,1 @@
+g++ -std=c++17 -Wno-unknown-attributes -o my_program main.cpp -I/opt/homebrew/include -L/opt/homebrew/lib -lpqxx -lpq  
