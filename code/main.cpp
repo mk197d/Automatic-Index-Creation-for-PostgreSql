@@ -1,9 +1,11 @@
 #include <iostream>
 #include <pqxx/pqxx> // PostgreSQL C++ library
 
+using namespace std;
+
 int main() {
     try {
-        pqxx::connection C("dbname=ecommerce user=mknined password=Mayan@197d host=localhost port=5432");
+        pqxx::connection C("dbname=ecommerce user=sakshamrathi password=12345678 host=localhost port=5432");
         if (C.is_open()) {
             std::cout << "Opened database successfully: " << C.dbname() << std::endl;
         } else {
