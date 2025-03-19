@@ -47,8 +47,8 @@ int main() {
     string hostname = "localhost";
     string port = "5432";
     string database = "ecommerce";
-    string username = "";
-    string password = "";
+    string username = "test";
+    string password = "test";
 
     try {
         connection C("dbname=" + database + " user=" + username + " password=" + password +
