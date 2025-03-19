@@ -1,5 +1,5 @@
 #include <iostream>
-#include <pqxx/pqxx> // PostgreSQL C++ library
+#include <pqxx/pqxx>
 #include <string>
 #include <sstream>
 #include <iomanip>
