@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 using namespace std;
 using namespace pqxx;
@@ -33,11 +35,10 @@ void printResult(result &R) {
 
 void executeAndPrintQuery(connection &C, const string &query) {
     try {
-        cout<<query<<endl;
+        cout << query << endl;
         nontransaction N(C);
         result R = N.exec(query);
         printResult(R);
-
     } catch (const exception &e) {
         cerr << "Error executing query: " << e.what() << endl;
     }
@@ -58,10 +59,15 @@ int main() {
             return 1;
         }
 
-        string cmd;
         while (true) {
-            cout << "pgshell# ";
-            getline(cin, cmd);
+            char *input = readline("pgshell# ");
+            if (!input) {
+                cout << "Exiting..." << endl;
+                break;
+            }
+
+            string cmd(input);
+            free(input);  // readline allocates memory dynamically
 
             if (cmd == "\\q") {
                 cout << "Exiting..." << endl;
@@ -72,6 +78,7 @@ int main() {
                 continue;
             }
 
+            add_history(cmd.c_str());  // Add command to history
             executeAndPrintQuery(C, cmd);
         }
 
