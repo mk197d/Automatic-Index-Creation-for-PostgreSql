@@ -67,7 +67,7 @@ int main() {
             }
 
             string cmd(input);
-            free(input);  // readline allocates memory dynamically
+            free(input);
 
             if (cmd == "\\q") {
                 cout << "Exiting..." << endl;
@@ -78,7 +78,7 @@ int main() {
                 continue;
             }
 
-            add_history(cmd.c_str());  // Add command to history
+            add_history(cmd.c_str());
             executeAndPrintQuery(C, cmd);
         }
 
