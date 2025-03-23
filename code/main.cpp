@@ -6,71 +6,71 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-using namespace std;
-using namespace pqxx;
+// using namespace std;
+// using namespace pqxx;
 
-void printResult(result &R) {
+void printResult(pqxx::result &R) {
     if (R.empty()) {
-        cout << "Query executed successfully. No results to display." << endl;
+        std::cout << "Query executed successfully. No results to display." << std::endl;
         return;
     }
 
     for (int i = 0; i < R.columns(); ++i) {
-        cout << setw(15) << left << R.column_name(i);
+        std::cout << std::setw(15) << std::left << R.column_name(i);
     }
-    cout << endl;
+    std::cout << std::endl;
 
     for (int i = 0; i < R.columns(); ++i) {
-        cout << setw(15) << setfill('-') << "";
+        std::cout << std::setw(15) << std::setfill('-') << "";
     }
-    cout << setfill(' ') << endl;
+    std::cout << std::setfill(' ') << std::endl;
 
     for (const auto &row : R) {
         for (int i = 0; i < R.columns(); ++i) {
-            cout << setw(15) << left << row[i].c_str();
+            std::cout << std::setw(15) << std::left << row[i].c_str();
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 }
 
-void executeAndPrintQuery(connection &C, const string &query) {
+void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
     try {
-        cout << query << endl;
-        nontransaction N(C);
-        result R = N.exec(query);
+        std::cout << query << std::endl;
+        pqxx::nontransaction N(C);
+        pqxx::result R = N.exec(query);
         printResult(R);
-    } catch (const exception &e) {
-        cerr << "Error executing query: " << e.what() << endl;
+    } catch (const std::exception &e) {
+        std::cerr << "Error executing query: " << e.what() << std::endl;
     }
 }
 
 int main() {
-    string hostname = "localhost";
-    string port = "5432";
-    string database = "ecommerce";
-    string username = "test";
-    string password = "test";
+    std::string hostname = "localhost";
+    std::string port = "5432";
+    std::string database = "ecommerce";
+    std::string username = "test";
+    std::string password = "test";
 
     try {
-        connection C("dbname=" + database + " user=" + username + " password=" + password +
+        pqxx::connection C("dbname=" + database + " user=" + username + " password=" + password +
                      " host=" + hostname + " port=" + port);
         if (!C.is_open()) {
-            cerr << "Can't open database" << endl;
+            std::cerr << "Can't open database" << std::endl;
             return 1;
         }
 
         while (true) {
             char *input = readline("pgshell# ");
             if (!input) {
-                cout << "Exiting..." << endl;
+                std::cout << "Exiting..." << std::endl;
                 break;
             }
 
-            string cmd(input);
+            std::string cmd(input);
             free(input);
 
             if (cmd == "\\q") {
-                cout << "Exiting..." << endl;
+                std::cout << "Exiting..." << std::endl;
                 break;
             }
 
@@ -82,8 +82,8 @@ int main() {
             executeAndPrintQuery(C, cmd);
         }
 
-    } catch (const exception &e) {
-        cerr << e.what() << endl;
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
         return 1;
     }
 
