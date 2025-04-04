@@ -1,5 +1,6 @@
 #include "helper.h"
 
+
 void printResult(pqxx::result &R) {
     if (R.empty()) {
         std::cout << "Query executed successfully. No results to display." << std::endl;
@@ -26,6 +27,7 @@ void printResult(pqxx::result &R) {
 
 void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
     try {
+        indexCreation(query);
         std::cout << query << std::endl;
         pqxx::nontransaction N(C);
         pqxx::result R = N.exec(query);

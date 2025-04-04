@@ -1,28 +1,41 @@
 #include "index.h"
 
-void indexCreation(std::string& query) {
-    std::string tableName;
-    std::string indexName;
-    std::string columnName;
 
-    // Parse the query to extract table name, index name, and column name
+void indexCreation(std::string const & query) {
+    std::string tableName;
+    std::string attributeListStr;
+    std::vector<std::string> attributes;
+
     std::istringstream iss(query);
     std::string token;
 
-    // Skip "CREATE INDEX"
-    iss >> token >> token;
+    iss >> token; 
+    
+    while (iss >> token && token != "FROM") {
+        if (!attributeListStr.empty()) {
+            attributeListStr += " ";
+        }
+        attributeListStr += token;
+    }
 
-    // Get table name
     iss >> tableName;
 
-    // Skip "("
-    iss >> token;
+    std::istringstream attrStream(attributeListStr);
+    std::string attr;
+    while (std::getline(attrStream, attr, ',')) {
+        size_t start = attr.find_first_not_of(" \t");
+        size_t end = attr.find_last_not_of(" \t");
+        if (start != std::string::npos && end != std::string::npos) {
+            attributes.push_back(attr.substr(start, end - start + 1));
+        } else if (!attr.empty()) {
+            attributes.push_back(attr);
+        }
+    }
 
-    // Get column name
-    iss >> columnName;
-
-    // Skip ")"
-    iss >> token;
-
-    std::cout << "Creating index " << indexName << " on table " << tableName << " for column " << columnName << std::endl;
+    std::cout << "Table name: " << tableName << std::endl;
+    std::cout << "Attributes: ";
+    for (const auto& a : attributes) {
+        std::cout << a << " ";
+    }
+    std::cout << std::endl;
 }

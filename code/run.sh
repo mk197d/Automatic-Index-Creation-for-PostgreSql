@@ -1,1 +1,0 @@
-g++ -std=c++17 -Wno-unknown-attributes -o my_program main.cpp helper.cpp index.cpp -I/opt/homebrew/include -L/opt/homebrew/lib -lpqxx -lpq -lreadline
