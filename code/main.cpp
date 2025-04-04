@@ -1,10 +1,5 @@
-#include <iostream>
-#include <pqxx/pqxx>
-#include <string>
-#include <sstream>
-#include <iomanip>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include "common-headers.h"
+#include "keywords.hh"
 
 // using namespace std;
 // using namespace pqxx;
