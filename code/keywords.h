@@ -1,3 +1,5 @@
+#ifndef KEYWORDS_H
+#define KEYWORDS_H
 #include "common-headers.h"
 
 enum class KeywordType {
@@ -118,3 +120,4 @@ std::map<std::string, KeywordType> keyword_map = {
     {"LIMIT", KeywordType::LIMIT},
     {"OFFSET", KeywordType::OFFSET}
 };
+#endif
