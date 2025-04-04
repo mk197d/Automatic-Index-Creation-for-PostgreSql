@@ -2,6 +2,7 @@
 #include "keywords.h"
 #include "helper.h"
 
+extern int current_timestamp;
 // using namespace std;
 // using namespace pqxx;
 
@@ -40,6 +41,7 @@ int main() {
             }
 
             add_history(cmd.c_str());
+            current_timestamp++;
             executeAndPrintQuery(C, cmd);
         }
 

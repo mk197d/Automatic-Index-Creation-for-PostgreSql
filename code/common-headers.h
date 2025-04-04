@@ -1,3 +1,6 @@
+#ifndef COMMON_HEADERS_H
+#define COMMON_HEADERS_H
+
 #include<iostream>
 #include <pqxx/pqxx>
 #include <string>
@@ -9,3 +12,5 @@
 #include <algorithm>
 #include <map>
 #include <set>
+
+#endif
