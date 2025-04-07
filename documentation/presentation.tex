@@ -1,0 +1,83 @@
+\documentclass[Serif, 10pt, brown]{beamer}
+\usepackage{booktabs,xcolor}
+%\usepackage[svgnames,table]{xcolor}
+%\usepackage[tableposition=above]{caption}
+\usepackage{pifont}
+\newcommand*\CHECK{\ding{51}}
+\usepackage{array}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+%
+\usepackage{setspace,mathtools,amssymb,multirow,array,amsmath,tikz}
+\usepackage[normalsize]{subfigure}
+\usetikzlibrary{patterns}
+\usetikzlibrary{automata,positioning,decorations.pathreplacing,decorations}
+
+\usepackage{curves}
+\usepackage{wasysym}
+\usepackage{epsfig,epstopdf,graphicx}
+
+\curvewarnfalse
+%
+\newtheorem{proposition}{Proposition}
+\theoremstyle{example}
+\newtheorem{theoremh}{Theorem}
+\theoremstyle{plain}
+\renewcommand{\textfraction}{0.01}
+\renewcommand{\floatpagefraction}{0.99}
+\newcommand{\ul}{\underline}
+\newcounter{units}
+%
+\usepackage[round]{natbib}
+ \bibpunct[, ]{(}{)}{,}{a}{}{,}%
+ \def\bibfont{\small}%
+ \def\bibsep{\smallskipamount}%
+ \def\bibhang{24pt}%
+ \def\newblock{\ }%
+ \def\BIBand{and}%
+%
+\setbeamercovered{dynamic}
+% Logo
+\logo{\includegraphics[width=0.5in,keepaspectratio]{iitb_logo.png}}
+%
+% Setup
+\mode<presentation>
+	{
+\usetheme[right,currentsection, hideothersubsections]{UTD}
+			\useoutertheme{sidebar} \useinnertheme[shadow]{rounded}
+			\usecolortheme{whale} \usecolortheme{orchid}
+			\usefonttheme[onlymath]{serif}
+			\setbeamertemplate{footline}{\centerline{Slide \insertframenumber/\inserttotalframenumber}}
+	}
+%
+% Title
+\usebeamercolor[fg]{author in sidebar}
+\title[{DBIS}]{\sc Automatic Index Creation}
+\author[\ul{Authors}]{{\bf { Saksham Rathi, Kavya Gupta, Shravan S, Mayank Kumar}}\\ {\footnotesize \hspace{0cm} (22B1003) \hspace{1cm} (22B1053) \hspace{0.5cm} (22B1054) \hspace{0.5cm} (22B0933)}}
+\institute[UTD]{\sc\small CS349: DataBase and Information Systems\\ Under Prof. Sudarshan and Prof. Suraj}
+\date[UCI]{Indian Institute of Technology Bombay \\ Spring 2024-25}
+%
+%Presentation
+\begin{document}
+\frame{\titlepage}
+%
+%
+%Slides
+
+%TOC
+
+\begin{frame}
+	\transblindsvertical
+	\frametitle{Contents}
+	\tableofcontents[hidesubsections]
+\end{frame}
+\note[itemize]{
+\item Here's the overall structure of my talk today.
+}
+
+\begin{frame}{Introduction to the Problem Statement}
+	
+\end{frame}
+
+\end{document}
+
+
