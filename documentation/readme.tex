@@ -73,7 +73,7 @@
 \note[itemize]{
 \item Here's the overall structure of my talk today.
 }
-
+\section{Introduction}
 \begin{frame}{Introduction to the Problem Statement}
 
 	\begin{itemize}
@@ -86,15 +86,26 @@
 			\item Track full relation scans with equality predicates.
 			\item Estimate the potential benefit of an index.
 			\item Automatically trigger index creation if estimated benefit outweighs the cost.
+			\item Rejecting low selectivity columns, such as gender, which has low number of distinct values.
 		\end{itemize}
 	\end{itemize}
 \end{frame}
 
+\section{Directory Structure}
 \begin{frame}{Directory Structure}
 	Here is the directory structure of the submission:
+	\begin{itemize}
+		\item \texttt{./code}: Contains the header and C++ files for the implementation, along with the Makefile.
+		\item \texttt{./theory}: Contains some relevant paper and slides.
+		\item \texttt{./documentation}: Contains the report as \texttt{readme.pdf}.
+		\item \texttt{./README.md}: Contains the instructions to run the code.
+	\end{itemize}
+\end{frame}
+
+\section{Approach}
+\begin{frame}{}
 	
 \end{frame}
-	
 
 \end{document}
 
