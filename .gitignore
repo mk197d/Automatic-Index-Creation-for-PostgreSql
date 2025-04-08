@@ -1,7 +1,8 @@
 my_program
 .vscode
 a.out
-run/venv
+run
+/venv
 .DS_Store
 *.out
 *.log
