@@ -75,8 +75,26 @@
 }
 
 \begin{frame}{Introduction to the Problem Statement}
+
+	\begin{itemize}
+		\item Indexes are crucial for efficient query execution in relational databases.
+		\item However, developers sometimes forget to create indexes for frequently queried columns.
+		\item This can lead to repeated full relation scans, significantly degrading performance.
+		\item {\bf Goal:} Modify the application layer of PostgreSQL to detect such patterns and automatically create indexes when beneficial.
+		\item Approach:
+		\begin{itemize}
+			\item Track full relation scans with equality predicates.
+			\item Estimate the potential benefit of an index.
+			\item Automatically trigger index creation if estimated benefit outweighs the cost.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Directory Structure}
+	Here is the directory structure of the submission:
 	
 \end{frame}
+	
 
 \end{document}
 
