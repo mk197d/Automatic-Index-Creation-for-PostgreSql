@@ -102,10 +102,42 @@
 	\end{itemize}
 \end{frame}
 
-\section{Approach}
-\begin{frame}{}
-	
+\section{When to use indices?}
+\begin{frame}{About Indices}
+	An index in SQL is a database object that improves the speed of data retrieval operations on a database table. 
+
+	\vspace{1cm}
+
+	When a query is executed, the database can use the index to quickly find the relevant rows. 
+
+	\vspace{1cm}
+
+	Without an index, the database might need to scan every row to find the data, which is much slower.
 \end{frame}
+
+\begin{frame}{When to use indices?}
+	\begin{itemize}
+		\item {\bf Frequent searches on specific columns:} Columns that are often used in WHERE clauses, JOIN conditions or as part of a SELECT query.
+		\item {\bf Large Tables with Heavy Read Operations:} Tables with a vast number of records where read operations are more common than write operations.
+		\item {\bf Columns used in JOINs:} Indexing these columns can speed up the join process.
+		\item {\bf Unique or Primary Key Constraints:} Indices improve lookup efficiency, so easy to impose such constraints.
+		\item {\bf Composite Indices:} When queries often filter on multiple columns, a composite index can be beneficial, rather than creating separate indices for each column.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{When to use indices?}
+	There are also cases, where we should refrain from using indices, such as tables with heavy write operations, because indices slow down INSERT, UPDATE, and DELETE operations (index needs to be updated too). Similarly, in case of small tables, or columns with low selectivity (many duplicate values).
+
+	\vspace{1cm}
+
+	Indices, overall lead to improved query performance, slower write opterations, and increased storage requirements.
+	
+	\vspace{1cm}
+
+	We can analyze how a query is execueted, and whether an index is effectively used or not by using the \texttt{EXPLAIN} command in PostgreSQL. Moreover, to maintain performance, expecially in databases with frequent data modifications, we need to regularly rebuild and reorganize indices.
+\end{frame}
+
+
 
 \end{document}
 
