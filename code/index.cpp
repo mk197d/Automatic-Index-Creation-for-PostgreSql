@@ -60,6 +60,7 @@ std::map<std::string, KeywordType> keyword_map = {
 };
 
 
+
 void indexCreation(std::string const & query) {
     std::string tableName;
     std::string attributeListStr;
@@ -90,11 +91,24 @@ void indexCreation(std::string const & query) {
             attributes.push_back(attr);
         }
     }
-
+    
     std::cout << "Table name: " << tableName << std::endl;
     std::cout << "Attributes: ";
     for (const auto& a : attributes) {
+        count_of_num_accesses[tableName][a]++;
         std::cout << a << " ";
     }
     std::cout << std::endl;
+}
+
+void showNumAccesses()
+{
+    for (auto & tableName: count_of_num_accesses)
+    {
+        std::cout << "Table name: " << tableName.first << std::endl;
+        for (const auto& a : tableName.second) {
+            std::cout << a.first << " " << a.second << std::endl;
+        }
+        std::cout << "\n";
+    }
 }
