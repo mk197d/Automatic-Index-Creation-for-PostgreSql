@@ -31,6 +31,12 @@ int main() {
             std::string cmd(input);
             free(input);
 
+            if (cmd == "\\show")
+            {
+                showNumAccesses();
+                continue;
+            }
+
             if (cmd == "\\q") {
                 std::cout << "Exiting..." << std::endl;
                 break;
