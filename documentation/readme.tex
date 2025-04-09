@@ -137,6 +137,32 @@
 	We can analyze how a query is execueted, and whether an index is effectively used or not by using the \texttt{EXPLAIN} command in PostgreSQL. Moreover, to maintain performance, expecially in databases with frequent data modifications, we need to regularly rebuild and reorganize indices.
 \end{frame}
 
+\section{Frequency Calculation}
+\begin{frame}{Calculating the frequency of relations and their attributes}
+For Stage 1 of this project, we made a simple parser, which gives us the list of relations, and the attributes involved in some query. This helps us know the number of times, a particular attribute of a relation is accessed, this in turn can be used to make the decision on whether we should construct an index on that attribute.
+
+For a sample run, the \texttt{\textbackslash show} command can be used to display the frequency results.
+\end{frame}
+
+\begin{frame}{Results}
+	Here is the sample output:
+	\begin{figure}[H]
+		\includegraphics[width=1\textwidth]{../images/Screenshot 2025-04-09 at 5.37.15 PM.png}
+		\caption{Displaying the output of show command}
+	\end{figure}
+\end{frame}
+
+\section{Next Steps}
+
+\begin{frame}{Next Steps}
+	Firstly, we need to create a cost function, which when crosses a threshold, will give us a signal, and an index creation will begin. After this, we need to implement a simple index creation (and removal) policy, such that LRU, MRU, LFU etc. Apart from this, here is the list of papers, which we are planning to read, and will implement the ideas of one of them:
+	\begin{itemize}
+		\item A tool for automatic index selection in Database Management Systems
+		\item Automatic Index Selection in RDBMS by Exploring Query Execution Plan Space
+		\item Automated Database Indexing Using Model-Free Reinforcement Learning
+	\end{itemize}
+\end{frame}
+
 \begin{frame}
     \Huge{\centerline{\bf Thank You}}
 \end{frame}
