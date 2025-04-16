@@ -60,8 +60,6 @@ std::map<std::string, KeywordType> keyword_map = {
 };
 
 void indexCreation(std::string const & query) {
-    // Call the Python parser through our bridge function
-    // Write the query to a temporary file
     std::ofstream tempQueryFile("tempQuery.sql");
     if (tempQueryFile.is_open()) {
         tempQueryFile << query;
@@ -71,7 +69,6 @@ void indexCreation(std::string const & query) {
         return;
     }
 
-    // Run the Python parser and redirect output to tempParse.txt
     int result = std::system("python3 query_parser.py tempQuery.sql > tempParse.txt");
     if (result != 0) {
         std::cerr << "Failed to execute query_parser.py." << std::endl;
@@ -113,43 +110,6 @@ void indexCreation(std::string const & query) {
     }
 
     tempParseFile.close();
-    // std::string tableName;
-    // std::string attributeListStr;
-    // std::vector<std::string> attributes;
-
-    // std::istringstream iss(query);
-    // std::string token;
-
-    // iss >> token; 
-    
-    // while (iss >> token && token != "FROM") {
-    //     if (!attributeListStr.empty()) {
-    //         attributeListStr += " ";
-    //     }
-    //     attributeListStr += token;
-    // }
-
-    // iss >> tableName;
-
-    // std::istringstream attrStream(attributeListStr);
-    // std::string attr;
-    // while (std::getline(attrStream, attr, ',')) {
-    //     size_t start = attr.find_first_not_of(" \t");
-    //     size_t end = attr.find_last_not_of(" \t");
-    //     if (start != std::string::npos && end != std::string::npos) {
-    //         attributes.push_back(attr.substr(start, end - start + 1));
-    //     } else if (!attr.empty()) {
-    //         attributes.push_back(attr);
-    //     }
-    // }
-    
-    // std::cout << "Table name: " << tableName << std::endl;
-    // std::cout << "Attributes: ";
-    // for (const auto& a : attributes) {
-    //     count_of_num_accesses[tableName][a]++;
-    //     std::cout << a << " ";
-    // }
-    // std::cout << std::endl;
 }
 
 void showNumAccesses()
