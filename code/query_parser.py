@@ -1,8 +1,26 @@
 import sqlparse
 import os
-from sqlparse.sql import IdentifierList, Identifier, Token, Function, Parenthesis
-from sqlparse.tokens import Keyword, DML, DDL, Whitespace, Punctuation, Name
 import sys
+from sqlparse.sql import IdentifierList, Identifier, Token, Function, Parenthesis
+from sqlparse.tokens import Keyword, DML, DDL, Whitespace, Punctuation, Name, Wildcard
+
+# Define common SQL functions and keywords to exclude from column detection
+SQL_FUNCTIONS = {
+    'SUM', 'COUNT', 'AVG', 'MIN', 'MAX', 'RANK', 'DENSE_RANK', 'ROW_NUMBER',
+    'FIRST_VALUE', 'LAST_VALUE', 'LAG', 'LEAD', 'NTILE', 'STDDEV', 'VARIANCE',
+    'EXTRACT', 'TO_CHAR', 'TO_DATE', 'COALESCE', 'NULLIF', 'CASE', 'CAST',
+    'ROUND', 'TRUNC', 'CONCAT', 'SUBSTR', 'LENGTH', 'UPPER', 'LOWER', 'TRIM',
+    'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'NOW'
+}
+
+SQL_KEYWORDS = {
+    'SELECT', 'FROM', 'WHERE', 'GROUP', 'BY', 'HAVING', 'ORDER', 'LIMIT',
+    'JOIN', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'OUTER', 'ON', 'AS', 'AND',
+    'OR', 'NOT', 'IN', 'EXISTS', 'BETWEEN', 'LIKE', 'IS', 'NULL', 'TRUE',
+    'FALSE', 'ASC', 'DESC', 'DISTINCT', 'ALL', 'UNION', 'INTERSECT', 'EXCEPT',
+    'WITH', 'OVER', 'PARTITION', 'ROWS', 'RANGE', 'PRECEDING', 'FOLLOWING',
+    'UNBOUNDED', 'CURRENT', 'ROW'
+}
 
 def extract_relations_and_attributes(sql_query):
     """
@@ -15,180 +33,223 @@ def extract_relations_and_attributes(sql_query):
         dict: A dictionary mapping relation names to their used attributes
     """
     # Parse the SQL query
-    parsed = sqlparse.parse(sql_query)[0]
+    try:
+        parsed = sqlparse.parse(sql_query)[0]
+    except IndexError:
+        print("Error: Unable to parse SQL query")
+        return {}
     
-    # Initialize dictionaries to store relations and their attributes
+    # Initialize dictionary to store relations and their attributes
     relations = {}
+    
+    # Process the SQL statement based on its type
+    if parsed.token_first().ttype == DML and parsed.token_first().value.upper() == 'INSERT':
+        process_insert_statement(parsed, relations)
+    elif parsed.token_first().ttype == DDL and parsed.token_first().value.upper() == 'CREATE':
+        process_create_statement(parsed, relations)
+    else:
+        process_select_statement(parsed, relations)
+    
+    # Print the results
+    for table_name, columns in relations.items():
+        print(f"{table_name}: {columns}")
+    
+    return relations
+
+def process_create_statement(parsed, relations):
+    """Process a CREATE TABLE statement to extract tables and columns."""
+    table_name = None
+    for i, token in enumerate(parsed.tokens):
+        # Find the table name after CREATE TABLE
+        if token.ttype == Keyword and token.value.upper() == 'TABLE':
+            j = i + 1
+            while j < len(parsed.tokens):
+                next_token = parsed.tokens[j]
+                if next_token.is_whitespace:
+                    j += 1
+                    continue
+                
+                if isinstance(next_token, Identifier):
+                    table_name = next_token.get_real_name()
+                    relations[table_name] = []
+                    break
+                j += 1
+            break
+    
+    # Extract column definitions from the parenthesis
+    if table_name:
+        for token in parsed.tokens:
+            if isinstance(token, Parenthesis):
+                for item in token.tokens:
+                    if isinstance(item, IdentifierList):
+                        for subitem in item.tokens:
+                            if isinstance(subitem, Identifier):
+                                col_name = subitem.get_real_name()
+                                if col_name and col_name not in relations[table_name]:
+                                    relations[table_name].append(col_name)
+
+def process_insert_statement(parsed, relations):
+    """Process an INSERT statement to extract tables and columns."""
+    # Find target table (the one we're inserting into)
+    target_table = None
+    
+    for i, token in enumerate(parsed.tokens):
+        if token.ttype == Keyword and token.value.upper() == 'INTO':
+            # Find the table name after INTO
+            j = i + 1
+            while j < len(parsed.tokens):
+                next_token = parsed.tokens[j]
+                if next_token.is_whitespace:
+                    j += 1
+                    continue
+                
+                if isinstance(next_token, Identifier):
+                    target_table = next_token.get_real_name()
+                    relations[target_table] = []
+                    break
+                j += 1
+            break
+    
+    if not target_table:
+        return
+    
+    # Find target columns (if specified)
+    for token in parsed.tokens:
+        if isinstance(token, Parenthesis) and target_table:
+            for item in token.tokens:
+                if isinstance(item, IdentifierList):
+                    for subitem in item.tokens:
+                        if isinstance(subitem, Identifier):
+                            col_name = subitem.get_real_name()
+                            if col_name and col_name not in relations[target_table]:
+                                relations[target_table].append(col_name)
+            break
+    
+    # Find and process the SELECT part if this is an INSERT INTO ... SELECT
+    select_found = False
+    for token in parsed.tokens:
+        if token.ttype == DML and token.value.upper() == 'SELECT':
+            select_found = True
+            break
+    
+    if select_found:
+        # Process the SELECT part
+        process_select_statement(parsed, relations)
+
+def process_select_statement(parsed, relations):
+    """Process a SELECT statement to extract tables and columns."""
+    # Track table aliases
     aliases = {}
     
-    # Handle CREATE TABLE statements
-    if parsed.token_first().ttype == DDL and parsed.token_first().value.upper() == 'CREATE':
-        table_name = None
-        for token in parsed.tokens:
-            # Find the table name after CREATE TABLE
-            if token.ttype == Keyword and token.value.upper() == 'TABLE':
-                i = parsed.token_index(token) + 1
-                while i < len(parsed.tokens):
-                    next_token = parsed.tokens[i]
-                    if next_token.is_whitespace:
-                        i += 1
-                        continue
-                    
-                    if isinstance(next_token, Identifier):
-                        table_name = next_token.get_real_name()
-                        relations[table_name] = []
-                        break
-                    i += 1
-            
-            # Extract column definitions from the parenthesis
-            if isinstance(token, Parenthesis) and table_name:
-                for item in token.tokens:
-                    if isinstance(item, IdentifierList):
-                        for subitem in item.tokens:
-                            if isinstance(subitem, Identifier):
-                                col_name = subitem.get_real_name()
-                                if col_name not in relations[table_name]:
-                                    relations[table_name].append(col_name)
+    # First pass: identify all tables and their aliases
+    extract_tables(parsed, relations, aliases)
     
-    # Handle INSERT statements
-    elif parsed.token_first().ttype == DML and parsed.token_first().value.upper() == 'INSERT':
-        table_name = None
-        columns = []
+    # Second pass: identify columns and associate with tables
+    extract_columns(parsed, relations, aliases)
+
+def extract_tables(parsed, relations, aliases):
+    """Extract table names and aliases from the SQL statement."""
+    for token in parsed.tokens:
+        # Skip irrelevant tokens
+        if token.is_whitespace or token.ttype == Punctuation:
+            continue
         
-        for token in parsed.tokens:
-            # Find the table name after INSERT INTO
-            if token.ttype == Keyword and token.value.upper() == 'INTO':
-                i = parsed.token_index(token) + 1
-                while i < len(parsed.tokens):
-                    next_token = parsed.tokens[i]
-                    if next_token.is_whitespace:
-                        i += 1
-                        continue
-                    
-                    if isinstance(next_token, Identifier) or isinstance(next_token, Function):
-                        table_name = next_token.get_real_name()
-                        relations[table_name] = []
-                        break
+        # Process FROM and JOIN clauses to find tables
+        if token.ttype == Keyword and token.value.upper() in ('FROM', 'JOIN'):
+            i = parsed.token_index(token)
+            if i + 1 < len(parsed.tokens):
+                # Get the next non-whitespace token
+                next_token = parsed.tokens[i + 1]
+                while next_token.is_whitespace and i + 2 < len(parsed.tokens):
                     i += 1
-            
-            # Extract column names from parenthesis after table name
-            if isinstance(token, Parenthesis) and table_name and not columns:
-                for item in token.tokens:
-                    if isinstance(item, IdentifierList):
-                        for subitem in item.tokens:
-                            if isinstance(subitem, Identifier):
-                                col_name = subitem.get_real_name()
-                                columns.append(col_name)
-                                if col_name not in relations[table_name]:
-                                    relations[table_name].append(col_name)
-    
-    # Handle SELECT statements and other DML
-    else:
-        # Identify table names and aliases
-        for token in parsed.tokens:
-            # Skip whitespace and punctuation
-            if token.is_whitespace or token.ttype == Punctuation:
-                continue
+                    next_token = parsed.tokens[i + 1]
                 
-            # Check for FROM or JOIN clauses
-            if token.ttype == Keyword and token.value.upper() in ('FROM', 'JOIN'):
-                # The next token after FROM/JOIN should contain the table name
-                i = parsed.token_index(token) + 1
-                while i < len(parsed.tokens):
-                    next_token = parsed.tokens[i]
-                    if next_token.is_whitespace:
-                        i += 1
-                        continue
-                        
-                    # Extract table names
-                    if isinstance(next_token, Identifier):
-                        table_name = next_token.get_real_name()
-                        alias = next_token.get_alias()
-                        relations[table_name] = []
-                        if alias:
-                            aliases[alias] = table_name
-                    elif isinstance(next_token, IdentifierList):
-                        for identifier in next_token.get_identifiers():
-                            if isinstance(identifier, Identifier):
-                                table_name = identifier.get_real_name()
-                                alias = identifier.get_alias()
-                                relations[table_name] = []
-                                if alias:
-                                    aliases[alias] = table_name
-                    break
-                    i += 1
-                    
-        # Extract SELECT column list
-        select_columns = []
-        for token in parsed.tokens:
-            if token.ttype == DML and token.value.upper() == 'SELECT':
-                i = parsed.token_index(token) + 1
-                while i < len(parsed.tokens):
-                    next_token = parsed.tokens[i]
-                    if next_token.is_whitespace:
-                        i += 1
-                        continue
-                    
-                    if isinstance(next_token, IdentifierList):
-                        for identifier in next_token.get_identifiers():
-                            if isinstance(identifier, Identifier):
-                                select_columns.append(identifier)
-                    elif isinstance(next_token, Identifier):
-                        select_columns.append(next_token)
-                    break
-                    i += 1
+                # Extract table name from FROM/JOIN clause
+                if isinstance(next_token, Identifier):
+                    process_table_identifier(next_token, relations, aliases)
+                elif isinstance(next_token, IdentifierList):
+                    for ident in next_token.get_identifiers():
+                        if isinstance(ident, Identifier):
+                            process_table_identifier(ident, relations, aliases)
         
-        # Process selected columns
-        for col in select_columns:
-            column = col.get_real_name()
-            table_reference = col.get_parent_name()
+        # Recursively process token lists (e.g., subqueries)
+        if hasattr(token, 'tokens'):
+            extract_tables(token, relations, aliases)
+
+def process_table_identifier(identifier, relations, aliases):
+    """Process a table identifier and extract its name and potential alias."""
+    table_name = identifier.get_real_name()
+    alias = identifier.get_alias()
+    
+    # Add table to relations if it's not already there
+    if table_name and table_name not in relations:
+        relations[table_name] = []
+    
+    # Record the alias -> table mapping
+    if alias:
+        aliases[alias] = table_name
+
+def extract_columns(parsed, relations, aliases):
+    """Extract column references from the SQL statement."""
+    def process_token_for_columns(token):
+        """Process a token to extract column references."""
+        # Handle identifiers that might be columns
+        if isinstance(token, Identifier):
+            column = token.get_real_name()
+            table_ref = token.get_parent_name()
             
-            # If we have a table reference like "table.column"
-            if table_reference:
+            # Skip if this is a SQL function or keyword
+            if column.upper() in SQL_FUNCTIONS or column.upper() in SQL_KEYWORDS:
+                return
+            
+            # Skip if this is a single-letter alias (like 's', 'e', 'a')
+            if len(column) == 1 and column.isalpha():
+                return
+            
+            # Handle table.column format
+            if table_ref:
                 # Check if it's an alias
-                if table_reference in aliases:
-                    actual_table = aliases[table_reference]
-                    if actual_table in relations and column not in relations[actual_table]:
-                        relations[actual_table].append(column)
-                # Or a direct table reference
-                elif table_reference in relations and column not in relations[table_reference]:
-                    relations[table_reference].append(column)
-            # No table reference - could be an ambiguous column
-            else:
-                # Add to all possible tables as an option
+                actual_table = aliases.get(table_ref, table_ref)
+                if actual_table in relations and column not in relations[actual_table]:
+                    relations[actual_table].append(column)
+            # Handle standalone column name (ambiguous)
+            elif column and not column.isdigit():
+                # For standalone columns, we need to be more selective
+                # Don't add common SQL functions/keywords as columns
                 for table in relations:
                     if column not in relations[table]:
                         relations[table].append(column)
         
-        # Process other attribute references in the query (WHERE, JOIN conditions, etc.)
-        def process_tokens(token_list):
-            for token in token_list:
-                if hasattr(token, 'tokens'):
-                    process_tokens(token.tokens)
-                
-                # Look for identifiers that could be columns
-                if isinstance(token, Identifier):
-                    column = token.get_real_name()
-                    table_reference = token.get_parent_name()
-                    
-                    # If we have a table reference like "table.column"
-                    if table_reference:
-                        # Check if it's an alias
-                        if table_reference in aliases:
-                            actual_table = aliases[table_reference]
-                            if actual_table in relations and column not in relations[actual_table]:
-                                relations[actual_table].append(column)
-                        # Or a direct table reference
-                        elif table_reference in relations and column not in relations[table_reference]:
-                            relations[table_reference].append(column)
+        # Handle wildcards (SELECT * FROM...)
+        elif token.ttype == Wildcard:
+            # When * is used, we can't determine specific columns
+            # We'll just note this in our output
+            for table in relations:
+                if '*' not in relations[table]:
+                    relations[table].append('*')
         
-        # Process all tokens to find column references
-        process_tokens(parsed.tokens)
+        # Recursively process tokens
+        if hasattr(token, 'tokens'):
+            for subtoken in token.tokens:
+                process_token_for_columns(subtoken)
     
-    for table, columns in relations.items():
-        print(f"{table}, {columns}")
-
-    return relations
+    # Process all tokens
+    for token in parsed.tokens:
+        process_token_for_columns(token)
+    
+    # Clean up potential aliases in column lists
+    for table in relations:
+        # Filter out single-character aliases
+        relations[table] = [
+            col for col in relations[table] 
+            if len(col) > 1 or not col.isalpha()
+        ]
+        
+        # Filter out SQL functions and keywords
+        relations[table] = [
+            col for col in relations[table]
+            if col.upper() not in SQL_FUNCTIONS and col.upper() not in SQL_KEYWORDS
+        ]
 
 def main():
     # Example SQL query
