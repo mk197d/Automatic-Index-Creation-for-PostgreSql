@@ -19,4 +19,4 @@ WHERE
     o.order_date BETWEEN '2023-01-01' AND '2023-12-31'
     AND p.category_id IN (1, 2, 3)
 ORDER BY 
-    c.last_name, o.order_date DESC;;
+    c.last_name, o.order_date DESC;

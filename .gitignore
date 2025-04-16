@@ -22,3 +22,5 @@ high.sh
 *.pyc
 rung.sh
 *.synctex
+tempQuery.sql
+tempParse.txt
