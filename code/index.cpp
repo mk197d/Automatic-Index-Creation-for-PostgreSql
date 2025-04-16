@@ -1,5 +1,4 @@
 #include "index.h"
-#include "python_bridge.h"
 
 std::map<std::string, KeywordType> keyword_map = {
     {"SELECT", KeywordType::SELECT},
@@ -62,8 +61,58 @@ std::map<std::string, KeywordType> keyword_map = {
 
 void indexCreation(std::string const & query) {
     // Call the Python parser through our bridge function
-    updateAccessCounts(query);
+    // Write the query to a temporary file
+    std::ofstream tempQueryFile("tempQuery.sql");
+    if (tempQueryFile.is_open()) {
+        tempQueryFile << query;
+        tempQueryFile.close();
+    } else {
+        std::cerr << "Failed to open tempQuery.sql for writing." << std::endl;
+        return;
+    }
 
+    // Run the Python parser and redirect output to tempParse.txt
+    int result = std::system("python3 query_parser.py tempQuery.sql > tempParse.txt");
+    if (result != 0) {
+        std::cerr << "Failed to execute query_parser.py." << std::endl;
+        return;
+    }
+
+    std::ifstream tempParseFile("tempParse.txt");
+    if (!tempParseFile.is_open()) {
+        std::cerr << "Failed to open tempParse.txt for reading." << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(tempParseFile, line)) {
+        size_t commaPos = line.find(',');
+        if (commaPos == std::string::npos) {
+            std::cerr << "Invalid line format: " << line << std::endl;
+            continue;
+        }
+
+        std::string tableName = line.substr(0, commaPos);
+        tableName.erase(std::remove(tableName.begin(), tableName.end(), ' '), tableName.end());
+
+        size_t startBracket = line.find('[', commaPos);
+        size_t endBracket = line.find(']', startBracket);
+        if (startBracket == std::string::npos || endBracket == std::string::npos) {
+            std::cerr << "Invalid attribute list format: " << line << std::endl;
+            continue;
+        }
+
+        std::string attributesStr = line.substr(startBracket + 1, endBracket - startBracket - 1);
+        std::istringstream attrStream(attributesStr);
+        std::string attribute;
+        while (std::getline(attrStream, attribute, ',')) {
+            attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
+            attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
+            count_of_num_accesses[tableName][attribute]++;
+        }
+    }
+
+    tempParseFile.close();
     // std::string tableName;
     // std::string attributeListStr;
     // std::vector<std::string> attributes;

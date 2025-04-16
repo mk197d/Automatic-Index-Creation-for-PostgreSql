@@ -1,7 +1,7 @@
 import sqlparse
+import os
 from sqlparse.sql import IdentifierList, Identifier, Token, Function, Parenthesis
 from sqlparse.tokens import Keyword, DML, DDL, Whitespace, Punctuation, Name
-import json
 import sys
 
 def extract_relations_and_attributes(sql_query):
@@ -185,24 +185,28 @@ def extract_relations_and_attributes(sql_query):
         # Process all tokens to find column references
         process_tokens(parsed.tokens)
     
+    for table, columns in relations.items():
+        print(f"{table}, {columns}")
+
     return relations
 
-def parse_query(sql_query):
+def main():
+    # Example SQL query
+    if len(sys.argv) != 2:
+        print("Usage: python query_parser.py <sql_query_file>")
+        sys.exit(1)
 
-    try:
-        relations = extract_relations_and_attributes(sql_query)
-        return json.dumps(relations)
-    except Exception as e:
-        return json.dumps({"error": str(e)})
+    sql_query_file = sys.argv[1]
 
-# For command line use
+    if not os.path.exists(sql_query_file):
+        print(f"Error: File '{sql_query_file}' does not exist.")
+        sys.exit(1)
+
+    with open(sql_query_file, 'r') as file:
+        sql_query = file.read()
+
+    # Call the function to extract relations and attributes
+    result = extract_relations_and_attributes(sql_query)
+    
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        query = sys.argv[1]
-        result = parse_query(query)
-        print(result)
-    else:
-        # Read from stdin if no argument provided
-        query = sys.stdin.read()
-        result = parse_query(query)
-        print(result)
+    main()
