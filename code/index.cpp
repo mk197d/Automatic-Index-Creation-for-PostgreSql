@@ -83,16 +83,16 @@ void indexCreation(std::string const & query) {
 
     std::string line;
     while (std::getline(tempParseFile, line)) {
-        size_t commaPos = line.find(',');
-        if (commaPos == std::string::npos) {
+        size_t colonPos = line.find(':');
+        if (colonPos == std::string::npos) {
             std::cerr << "Invalid line format: " << line << std::endl;
             continue;
         }
 
-        std::string tableName = line.substr(0, commaPos);
+        std::string tableName = line.substr(0, colonPos);
         tableName.erase(std::remove(tableName.begin(), tableName.end(), ' '), tableName.end());
 
-        size_t startBracket = line.find('[', commaPos);
+        size_t startBracket = line.find('[', colonPos);
         size_t endBracket = line.find(']', startBracket);
         if (startBracket == std::string::npos || endBracket == std::string::npos) {
             std::cerr << "Invalid attribute list format: " << line << std::endl;
@@ -103,9 +103,11 @@ void indexCreation(std::string const & query) {
         std::istringstream attrStream(attributesStr);
         std::string attribute;
         while (std::getline(attrStream, attribute, ',')) {
+            
+            
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
-            count_of_num_accesses[tableName][attribute]++;
+            if(tableName != attribute) count_of_num_accesses[tableName][attribute]++;
         }
     }
 
