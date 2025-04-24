@@ -10,8 +10,8 @@ int main() {
     std::string hostname = "localhost";
     std::string port = "5432";
     std::string database = "ecommerce";
-    std::string username = "test";
-    std::string password = "test";
+    std::string username = "mknined";
+    std::string password = "Mayan@197d";
 
     try {
         pqxx::connection C("dbname=" + database + " user=" + username + " password=" + password +
@@ -40,6 +40,21 @@ int main() {
             if (cmd == "\\q") {
                 std::cout << "Exiting..." << std::endl;
                 break;
+            }
+
+            if (cmd == "\\d") {
+                pqxx::work W(C);
+                pqxx::result R = W.exec(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
+                );
+                W.commit();
+
+                std::cout << "List of relations" << std::endl;
+                std::cout << "-----------------" << std::endl;
+                for (const auto &row : R) {
+                    std::cout << row[0].c_str() << std::endl;
+                }
+                continue;
             }
 
             if (cmd.empty()) {

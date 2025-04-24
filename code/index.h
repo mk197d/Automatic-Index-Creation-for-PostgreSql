@@ -5,7 +5,8 @@
 
 extern std::map<std::string, KeywordType> keyword_map;
 extern std::map<std::string, std::map<std::string, int>> count_of_num_accesses;
-void indexCreation(std::string const & query);
+void indexCreation(pqxx::connection &C, std::string const & query);
+bool attributeExists(pqxx::connection &C, const std::string &relationName, const std::string &attributeName);
 void showNumAccesses();
 
 #endif
