@@ -10,8 +10,8 @@ int main() {
     std::string hostname = "localhost";
     std::string port = "5432";
     std::string database = "ecommerce";
-    std::string username = "mknined";
-    std::string password = "Mayan@197d";
+    std::string username = "test";
+    std::string password = "test";
 
     try {
         pqxx::connection C("dbname=" + database + " user=" + username + " password=" + password +
