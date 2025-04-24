@@ -31,6 +31,7 @@ void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
         pqxx::nontransaction N(C);
         pqxx::result R = N.exec(query);
         printResult(R);
+        clearIndices();
     } catch (const std::exception &e) {
         std::cerr << "Error executing query: " << e.what() << std::endl;
     }

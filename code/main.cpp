@@ -1,7 +1,6 @@
 #include "common-headers.h"
 #include "keywords.h"
 #include "helper.h"
-
 extern int current_timestamp;
 // using namespace std;
 // using namespace pqxx;
@@ -20,7 +19,7 @@ int main() {
             std::cerr << "Can't open database" << std::endl;
             return 1;
         }
-
+        policy = P1;
         while (true) {
             char *input = readline("pgshell# ");
             if (!input) {

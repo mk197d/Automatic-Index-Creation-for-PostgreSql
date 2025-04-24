@@ -1,4 +1,12 @@
 #include "index.h"
+/*
+    1. Create an IndexEntry structure for incoming queries if one does not already exist.
+    2. Create an index in postgres through the query "CREATE INDEX <index_name> on <table_name>(<col1>,<col2>,...,<coln>);"
+    3. <index_name> = <table_name> + current_timestamp
+    4. Delete an index entry from indices.
+    5. Delete an index from postgres through the query "DROP INDEX IF EXISTS <index_name>;" 
+    6. <index_name> is obtained from entry->indexName.
+*/
 
 std::map<std::string, KeywordType> keyword_map = {
     {"SELECT", KeywordType::SELECT},
@@ -102,11 +110,23 @@ void indexCreation(pqxx::connection &C, std::string const & query) {
         std::string attributesStr = line.substr(startBracket + 1, endBracket - startBracket - 1);
         std::istringstream attrStream(attributesStr);
         std::string attribute;
+        std::set<std::string>* atrs = new std::set<std::string>();
+
         while (std::getline(attrStream, attribute, ',')) {            
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
-
-            if(tableName != attribute && attributeExists(C, tableName, attribute)) count_of_num_accesses[tableName][attribute]++;
+            if(tableName != attribute && attributeExists(C, tableName, attribute)){
+                count_of_num_accesses[tableName][attribute]++;
+                atrs->insert(attribute);
+            } 
+        }
+        if (indexExists(tableName,atrs)){
+            updateIndexEntry(tableName,atrs);
+        }
+        else {
+            IndexEntry* entry = new IndexEntry(tableName,atrs);
+            indices.insert(entry);
+            std::string query = "CREATE ";
         }
     }
 
@@ -143,5 +163,25 @@ bool attributeExists(pqxx::connection &C, const std::string &relationName, const
     } catch (const std::exception &e) {
         std::cerr << "Error checking attribute existence: " << e.what() << std::endl;
         return false;
+    }
+}
+
+void clearIndices(){
+    switch (policy) {
+        case P1:
+            auto it = indices.begin();
+            for (; it != indices.end(); ++it) {
+                if (current_timestamp - (*it)->getCreateTime() <= 2) {
+                    break; 
+                }
+            }
+            
+            // Erase from 'it' to end
+            indices.erase(indices.begin(), it);
+            break;
+        case P2:
+            /* Will implement in a few business days*/
+        default:
+            break;
     }
 }
