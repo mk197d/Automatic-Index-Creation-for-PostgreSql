@@ -125,3 +125,7 @@ void showNumAccesses()
         std::cout << "\n";
     }
 }
+
+void cleanUp(){
+    indexDeletion();
+}
