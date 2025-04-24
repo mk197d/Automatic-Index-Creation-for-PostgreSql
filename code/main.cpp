@@ -42,6 +42,21 @@ int main() {
                 break;
             }
 
+            if (cmd == "\\d") {
+                pqxx::work W(C);
+                pqxx::result R = W.exec(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
+                );
+                W.commit();
+
+                std::cout << "List of relations" << std::endl;
+                std::cout << "-----------------" << std::endl;
+                for (const auto &row : R) {
+                    std::cout << row[0].c_str() << std::endl;
+                }
+                continue;
+            }
+
             if (cmd.empty()) {
                 continue;
             }

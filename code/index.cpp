@@ -59,7 +59,7 @@ std::map<std::string, KeywordType> keyword_map = {
     {"OFFSET", KeywordType::OFFSET}
 };
 
-void indexCreation(std::string const & query) {
+void indexCreation(pqxx::connection &C, std::string const & query) {
     std::ofstream tempQueryFile("tempQuery.sql");
     if (tempQueryFile.is_open()) {
         tempQueryFile << query;
@@ -102,12 +102,11 @@ void indexCreation(std::string const & query) {
         std::string attributesStr = line.substr(startBracket + 1, endBracket - startBracket - 1);
         std::istringstream attrStream(attributesStr);
         std::string attribute;
-        while (std::getline(attrStream, attribute, ',')) {
-            
-            
+        while (std::getline(attrStream, attribute, ',')) {            
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
-            if(tableName != attribute) count_of_num_accesses[tableName][attribute]++;
+
+            if(tableName != attribute && attributeExists(C, tableName, attribute)) count_of_num_accesses[tableName][attribute]++;
         }
     }
 
@@ -126,6 +125,23 @@ void showNumAccesses()
     }
 }
 
-void cleanUp(){
-    indexDeletion();
+bool attributeExists(pqxx::connection &C, const std::string &relationName, const std::string &attributeName) {
+    try {
+        // Query the information_schema.columns table to check if the attribute exists
+        std::string query = "SELECT COUNT(*) FROM information_schema.columns "
+                           "WHERE table_name = '" + relationName + "' "
+                           "AND column_name = '" + attributeName + "'";
+        
+        pqxx::nontransaction N(C);
+        pqxx::result R = N.exec(query);
+        
+        // If the result has at least one row and the count is greater than 0, the attribute exists
+        if (!R.empty() && R[0][0].as<int>() > 0) {
+            return true;
+        }
+        return false;
+    } catch (const std::exception &e) {
+        std::cerr << "Error checking attribute existence: " << e.what() << std::endl;
+        return false;
+    }
 }

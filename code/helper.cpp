@@ -27,7 +27,7 @@ void printResult(pqxx::result &R) {
 
 void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
     try {
-        indexCreation(query);
+        indexCreation(C, query);
         pqxx::nontransaction N(C);
         pqxx::result R = N.exec(query);
         printResult(R);
