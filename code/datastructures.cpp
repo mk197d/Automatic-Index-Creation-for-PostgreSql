@@ -2,7 +2,7 @@
 
 int current_timestamp = 0;
 std::map<std::string, std::map<std::string, int>> count_of_num_accesses;
-std::set<IndexEntry*> indices;
+std::vector<IndexEntry*> indices;
 
 IndexEntry::IndexEntry(const std::string& tName){
     this->tableName = tName;
@@ -39,6 +39,14 @@ bool IndexEntry::operator<(const IndexEntry& other) {
     return this->createTime < other.createTime;
 }
 
+std::ostream& operator<<(std::ostream& out, const IndexEntry& other){
+    out << other.tableName << " " << other.indexName << " " << other.createTime << " " << other.numAccesses << "Attributes ";
+    for (auto it : *(other.setOfAttributes)){
+        out << it << " ";
+    } 
+    return out;
+}
+
 bool indexExists(const std::string& tName,const std::set<std::string>* const attributes){
     for (auto entry : indices ){
         if (entry->tableName == tName) {
@@ -57,7 +65,7 @@ void updateIndexEntry(const std::string& tName, std::set<std::string>* const att
         newIndex->setCreateTime(current_timestamp);
         newIndex->setNumOfAccesses((*it)->getNumOfAccesses() + 1);
         indices.erase(it);
-        indices.insert(newIndex);
+        indices.push_back(newIndex);
     }
 }
 

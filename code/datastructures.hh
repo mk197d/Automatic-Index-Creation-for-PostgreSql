@@ -17,6 +17,7 @@ class IndexEntry {
     IndexEntry(const std::string&);
     IndexEntry(const std::string&, std::set<std::string>* const);
     bool operator<(const IndexEntry& other);
+    friend std::ostream& operator<<(std::ostream& , const IndexEntry&);
     void setCreateTime(const int&);
     int getCreateTime();
     void setNumOfAccesses(const int&);
@@ -25,5 +26,5 @@ class IndexEntry {
 
 bool indexExists(const std::string&, const std::set<std::string>* const);
 void updateIndexEntry(const std::string& ,std::set<std::string>* const);
-extern std::set<IndexEntry*> indices;
+extern std::vector<IndexEntry*> indices;
 #endif

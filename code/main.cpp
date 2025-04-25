@@ -18,7 +18,7 @@ int main() {
             std::cerr << "Can't open database" << std::endl;
             return 1;
         }
-        p = POLICY::P1;
+        p = POLICY::P2;
         while (true) {
             char *input = readline("pgshell# ");
             if (!input) {

@@ -124,7 +124,7 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
         }
         else {
             IndexEntry* entry = new IndexEntry(tableName,atrs);
-            indices.insert(entry);
+            indices.push_back(entry);
 
             try {
                 std::set<std::string> cols = *atrs;
@@ -207,7 +207,7 @@ void clearIndices(pqxx::work& txn){
             auto it = indices.begin();
             std::vector<IndexEntry*> indicesToDelete;
             for (; it != indices.end(); ++it) {
-                if (current_timestamp - (*it)->getCreateTime() <= 2) {
+                if (current_timestamp - (*it)->getCreateTime() <= 5) {
                     break; 
                 }
                 indicesToDelete.push_back(*it);
@@ -230,8 +230,31 @@ void clearIndices(pqxx::work& txn){
             break;
         }
         case POLICY::P2:{
-            /* Will implement in a few business days*/
-
+            auto it = indices.begin();
+            std::vector<IndexEntry*> newIndices;
+            std::vector<IndexEntry*> indicesToDelete;
+            for (; it != indices.end(); ++it) {
+                if (4*(*it)->getNumOfAccesses() < current_timestamp - (*it)->getCreateTime()) {
+                    indicesToDelete.push_back(*it);
+                }
+                else {
+                    newIndices.push_back(*it);
+                }
+            }
+            if (indicesToDelete.size() == 0) break;
+            indices = newIndices;
+            try {
+            
+                for (const auto& name : indicesToDelete) {
+                    txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
+                }
+            
+                // txn.commit();
+                std::cout << "Expired indices removed from DB.\n";
+            } 
+            catch (const std::exception& e) {
+                std::cerr << "Failed to delete from DB: " << e.what() << '\n';
+            }            
         }
         default:
             break;
