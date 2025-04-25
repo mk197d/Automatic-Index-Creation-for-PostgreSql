@@ -6,12 +6,14 @@ std::set<IndexEntry*> indices;
 
 IndexEntry::IndexEntry(const std::string& tName){
     this->tableName = tName;
+    this->indexName = tName + std::to_string(current_timestamp);
     this->createTime = current_timestamp;
     this->numAccesses = 1;
 }
 
 IndexEntry::IndexEntry(const std::string& tName, std::set<std::string>* const attributes){
     this->tableName = tName;
+    this->indexName = tName + std::to_string(current_timestamp);
     this->setOfAttributes = attributes;
     this->createTime = current_timestamp;
     this->numAccesses = 1;

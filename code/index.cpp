@@ -67,7 +67,7 @@ std::map<std::string, KeywordType> keyword_map = {
     {"OFFSET", KeywordType::OFFSET}
 };
 
-void indexCreation(pqxx::connection &C, std::string const & query) {
+void indexCreation(pqxx::work& txn, std::string const & query) {
     std::ofstream tempQueryFile("tempQuery.sql");
     if (tempQueryFile.is_open()) {
         tempQueryFile << query;
@@ -88,7 +88,6 @@ void indexCreation(pqxx::connection &C, std::string const & query) {
         std::cerr << "Failed to open tempParse.txt for reading." << std::endl;
         return;
     }
-
     std::string line;
     while (std::getline(tempParseFile, line)) {
         size_t colonPos = line.find(':');
@@ -115,7 +114,7 @@ void indexCreation(pqxx::connection &C, std::string const & query) {
         while (std::getline(attrStream, attribute, ',')) {            
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
-            if(tableName != attribute && attributeExists(C, tableName, attribute)){
+            if(tableName != attribute && attributeExists(txn, tableName, attribute)){
                 count_of_num_accesses[tableName][attribute]++;
                 atrs->insert(attribute);
             } 
@@ -126,7 +125,44 @@ void indexCreation(pqxx::connection &C, std::string const & query) {
         else {
             IndexEntry* entry = new IndexEntry(tableName,atrs);
             indices.insert(entry);
-            std::string query = "CREATE ";
+
+            try {
+                std::set<std::string> cols = *atrs;
+        
+                std::string idxName = entry->indexName;
+                if (atrs->empty()){
+                    std::string pkQuery = R"(
+                        SELECT a.attname
+                        FROM pg_index i
+                        JOIN pg_class c ON c.oid = i.indrelid
+                        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+                        WHERE i.indisprimary AND c.relname = $1;
+                    )";
+        
+                    pqxx::result r = txn.exec_params(pkQuery, tableName);
+                    for (const auto& row : r) {
+                        cols.insert(row[0].as<std::string>());
+                    }
+        
+                    if (cols.empty()) {
+                        throw std::runtime_error("No columns specified and no primary key found.");
+                    }
+                }
+                std::string colList;
+                for (auto it = cols.begin(); it != cols.end(); ++it) {
+                    colList += txn.quote_name(*it);
+                    if (std::next(it) != cols.end())
+                        colList += ", ";
+                }        
+                std::string query = "CREATE INDEX IF NOT EXISTS " + txn.quote_name(idxName) + " ON " + txn.quote_name(tableName) + " (" + colList + ");";
+        
+                txn.exec0(query);
+                // txn.commit();
+                std::cout << "Index '" << idxName << "' created on table '" << tableName << "'.\n";
+            } 
+            catch (const std::exception& e) {
+                std::cerr << "Failed to create index: " << e.what() << '\n';
+            }        
         }
     }
 
@@ -145,15 +181,14 @@ void showNumAccesses()
     }
 }
 
-bool attributeExists(pqxx::connection &C, const std::string &relationName, const std::string &attributeName) {
+bool attributeExists(pqxx::work& txn, const std::string &relationName, const std::string &attributeName) {
     try {
         // Query the information_schema.columns table to check if the attribute exists
         std::string query = "SELECT COUNT(*) FROM information_schema.columns "
                            "WHERE table_name = '" + relationName + "' "
                            "AND column_name = '" + attributeName + "'";
         
-        pqxx::nontransaction N(C);
-        pqxx::result R = N.exec(query);
+        pqxx::result R = txn.exec(query);
         
         // If the result has at least one row and the count is greater than 0, the attribute exists
         if (!R.empty() && R[0][0].as<int>() > 0) {
@@ -166,21 +201,38 @@ bool attributeExists(pqxx::connection &C, const std::string &relationName, const
     }
 }
 
-void clearIndices(){
-    switch (policy) {
-        case P1:
+void clearIndices(pqxx::work& txn){
+    switch (p) {
+        case POLICY::P1:{
             auto it = indices.begin();
+            std::vector<IndexEntry*> indicesToDelete;
             for (; it != indices.end(); ++it) {
                 if (current_timestamp - (*it)->getCreateTime() <= 2) {
                     break; 
                 }
+                indicesToDelete.push_back(*it);
             }
-            
-            // Erase from 'it' to end
             indices.erase(indices.begin(), it);
+            if (indicesToDelete.size() == 0) break;
+            try {
+            
+                for (const auto& name : indicesToDelete) {
+                    txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
+                }
+            
+                // txn.commit();
+                std::cout << "Expired indices removed from DB.\n";
+            } 
+            catch (const std::exception& e) {
+                std::cerr << "Failed to delete from DB: " << e.what() << '\n';
+            }
+                        
             break;
-        case P2:
+        }
+        case POLICY::P2:{
             /* Will implement in a few business days*/
+
+        }
         default:
             break;
     }

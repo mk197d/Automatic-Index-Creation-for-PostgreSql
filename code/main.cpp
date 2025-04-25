@@ -2,8 +2,7 @@
 #include "keywords.h"
 #include "helper.h"
 extern int current_timestamp;
-// using namespace std;
-// using namespace pqxx;
+POLICY p;
 
 int main() {
     std::string hostname = "localhost";
@@ -19,7 +18,7 @@ int main() {
             std::cerr << "Can't open database" << std::endl;
             return 1;
         }
-        policy = P1;
+        p = POLICY::P1;
         while (true) {
             char *input = readline("pgshell# ");
             if (!input) {

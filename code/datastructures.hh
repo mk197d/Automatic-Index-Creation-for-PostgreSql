@@ -13,9 +13,6 @@ class IndexEntry {
     std::string attributeName;
     std::set<std::string>* setOfAttributes;
     std::string indexName;
-    /*
-        Modify these two constructors to create an index name from tableName and current_timestamp
-    */
 
     IndexEntry(const std::string&);
     IndexEntry(const std::string&, std::set<std::string>* const);

@@ -27,11 +27,19 @@ void printResult(pqxx::result &R) {
 
 void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
     try {
-        indexCreation(C, query);
-        pqxx::nontransaction N(C);
-        pqxx::result R = N.exec(query);
-        printResult(R);
-        clearIndices();
+        pqxx::work txn(C);  // Start a transaction
+
+        // Perform the index creation inside the transaction
+        indexCreation(txn, query);  
+
+        // Execute the query inside the same transaction
+        pqxx::result R = txn.exec(query);
+        printResult(R);  // Print the result of the query
+
+        // Perform index cleanup (if needed) without committing the transaction
+        clearIndices(txn);
+
+        txn.commit();
     } catch (const std::exception &e) {
         std::cerr << "Error executing query: " << e.what() << std::endl;
     }
