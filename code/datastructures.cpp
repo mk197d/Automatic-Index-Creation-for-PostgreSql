@@ -3,6 +3,7 @@
 int current_timestamp = 0;
 std::map<std::string, std::map<std::string, int>> count_of_num_accesses;
 std::vector<IndexEntry*> indices;
+std::set<pid_t> existing_child_processes;
 
 IndexEntry::IndexEntry(const std::string& tName){
     this->tableName = tName;

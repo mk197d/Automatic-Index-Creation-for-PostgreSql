@@ -13,4 +13,5 @@ void indexCreation(pqxx::work &C, std::string const & query);
 bool attributeExists(pqxx::work& txn, const std::string &relationName, const std::string &attributeName);
 void showNumAccesses();
 void clearIndices(pqxx::work&);
+void fork_a_child_for_index(std::string tableName, std::set<std::string>* atrs, pqxx::work& txn);
 #endif

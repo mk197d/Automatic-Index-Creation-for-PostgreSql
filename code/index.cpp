@@ -68,6 +68,20 @@ std::map<std::string, KeywordType> keyword_map = {
 };
 
 void indexCreation(pqxx::work& txn, std::string const & query) {
+    if (!existing_child_processes.empty())
+    {
+        std::set<pid_t> finished_children;
+        for (pid_t child_pid : existing_child_processes) {
+            int status;
+            pid_t result = waitpid(child_pid, &status, WNOHANG);
+            if (result > 0) {
+                finished_children.insert(child_pid);
+            }
+        }
+        for (pid_t finished_pid : finished_children) {
+            existing_child_processes.erase(finished_pid);
+        }
+    }
     std::ofstream tempQueryFile("tempQuery.sql");
     if (tempQueryFile.is_open()) {
         tempQueryFile << query;
@@ -119,13 +133,24 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
                 atrs->insert(attribute);
             } 
         }
+        fork_a_child_for_index(tableName, atrs, txn);
+    }
+
+    tempParseFile.close();
+}
+
+void fork_a_child_for_index(std::string tableName, std::set<std::string>* atrs, pqxx::work& txn)
+{
+    pid_t child = fork();
+    if (child == 0)
+    {
         if (indexExists(tableName,atrs)){
             updateIndexEntry(tableName,atrs);
         }
         else {
             IndexEntry* entry = new IndexEntry(tableName,atrs);
             indices.push_back(entry);
-
+    
             try {
                 std::set<std::string> cols = *atrs;
         
@@ -165,8 +190,11 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
             }        
         }
     }
-
-    tempParseFile.close();
+    else 
+    {
+        existing_child_processes.insert(child);
+    }
+    
 }
 
 void showNumAccesses()

@@ -24,6 +24,7 @@ class IndexEntry {
     int getNumOfAccesses();
 };
 
+extern std::set<pid_t> existing_child_processes;
 bool indexExists(const std::string&, const std::set<std::string>* const);
 void updateIndexEntry(const std::string& ,std::set<std::string>* const);
 extern std::vector<IndexEntry*> indices;
