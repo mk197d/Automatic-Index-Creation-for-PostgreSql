@@ -174,7 +174,15 @@ For a sample run, the \texttt{\textbackslash show} command can be used to displa
 		\texttt{Freq > threshold1 OR Freq * T > threshold2}
 		\item \texttt{Freq} is the frequency of each indexable attribute in the workload and \texttt{T} is proportional to the size of the table in rows to which the column belongs.
 		\item Weights of 3, 2, 1 are given to the columns occurring in a {\tt WHERE} clause, {\tt GROUP BY} or {\tt ORDER BY} clauses and aggregate functions, respectively.
-		\item 
+		\item During the clustering phase queries that are similar based on common and frequently occurring attributes are clustered together.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Candidate index suggestion}
+	\begin{itemize}
+		\item During this phase, those candidate indexable attributes which are common to all the queries clustered together during the clustering phase are suggested as indexes.
+		\item The optimizer uses its statistics and cost estimates to choose indexes for each query.
+		\item Those indexes not being picked up by the optimizer are dropped because the presence of these unused indexes will cause an overhead of space and maintenance in the database.
 	\end{itemize}
 \end{frame}
 
