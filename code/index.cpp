@@ -7,6 +7,7 @@
     5. Delete an index from postgres through the query "DROP INDEX IF EXISTS <index_name>;" 
     6. <index_name> is obtained from entry->indexName.
 */
+matrix_t frequencyMap;
 
 std::map<std::string, KeywordType> keyword_map = {
     {"SELECT", KeywordType::SELECT},
@@ -67,6 +68,27 @@ std::map<std::string, KeywordType> keyword_map = {
     {"OFFSET", KeywordType::OFFSET}
 };
 
+void updateMap(const std::string& tableName,const std::vector<std::string>& attributes){
+    for (int i = 0 ; i < attributes.size() ; i++){
+        if (frequencyMap.find({tableName,attributes[i]}) != frequencyMap.end()){
+            frequencyMap[{tableName,attributes[i]}]++;
+        }  
+        else {
+            frequencyMap.insert({{tableName,attributes[i]},1});
+        }
+    }
+}
+
+void scanMap(pqxx::work& txn){
+    std::set<std::string>* const attrs = new std::set<std::string>();
+    for (auto [u,v] : frequencyMap){
+        if (v >= THRESHOLD){
+            attrs->insert(u.second);
+            fork_a_child_for_index(u.first,attrs,txn);
+        }
+    }
+}
+
 void indexCreation(pqxx::work& txn, std::string const & query) {
     if (!existing_child_processes.empty())
     {
@@ -123,23 +145,25 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
         std::string attributesStr = line.substr(startBracket + 1, endBracket - startBracket - 1);
         std::istringstream attrStream(attributesStr);
         std::string attribute;
-        std::set<std::string>* atrs = new std::set<std::string>();
-
+        std::vector<std::string> attributes;
         while (std::getline(attrStream, attribute, ',')) {            
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
             if(tableName != attribute && attributeExists(txn, tableName, attribute)){
-                count_of_num_accesses[tableName][attribute]++;
-                atrs->insert(attribute);
+                // count_of_num_accesses[tableName][attribute]++; // redundant now
+                attributes.push_back(attribute);
+            
             } 
         }
-        fork_a_child_for_index(tableName, atrs, txn);
+        updateMap(tableName,attributes);
+        // fork_a_child_for_index(tableName, atrs, txn);
+        scanMap(txn);
     }
 
     tempParseFile.close();
 }
 
-void fork_a_child_for_index(std::string tableName, std::set<std::string>* atrs, pqxx::work& txn)
+void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
 {
     pid_t child = fork();
     if (child == 0)
@@ -199,13 +223,16 @@ void fork_a_child_for_index(std::string tableName, std::set<std::string>* atrs, 
 
 void showNumAccesses()
 {
-    for (auto & tableName: count_of_num_accesses)
-    {
-        std::cout << "Table name: " << tableName.first << std::endl;
-        for (const auto& a : tableName.second) {
-            std::cout << a.first << " " << a.second << std::endl;
-        }
-        std::cout << "\n";
+    // for (auto & tableName: count_of_num_accesses)
+    // {
+    //     std::cout << "Table name: " << tableName.first << std::endl;
+    //     for (const auto& a : tableName.second) {
+    //         std::cout << a.first << " " << a.second << std::endl;
+    //     }
+    //     std::cout << "\n";
+    // }
+    for (auto [u,v] : frequencyMap){
+        std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
     }
 }
 

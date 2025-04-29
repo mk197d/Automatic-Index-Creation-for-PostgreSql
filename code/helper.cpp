@@ -37,7 +37,7 @@ void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
         printResult(R);  // Print the result of the query
 
         // Perform index cleanup (if needed) without committing the transaction
-        clearIndices(txn);
+        // clearIndices(txn); // Not required currently
 
         txn.commit();
     } catch (const std::exception &e) {

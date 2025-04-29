@@ -2,6 +2,9 @@
 #define INDEX_H
 #include "keywords.h"
 #include "datastructures.hh"
+#define THRESHOLD 10
+typedef std::pair<std::string,std::string> pair_t;
+typedef std::map<pair_t,int> matrix_t;
 extern std::map<std::string, KeywordType> keyword_map;
 extern std::map<std::string, std::map<std::string, int>> count_of_num_accesses;
 enum class POLICY{
@@ -9,9 +12,11 @@ enum class POLICY{
     P2
 };
 extern POLICY p;
-void indexCreation(pqxx::work &C, std::string const & query);
-bool attributeExists(pqxx::work& txn, const std::string &relationName, const std::string &attributeName);
+void indexCreation(pqxx::work&, std::string const& );
+void updateMap(const std::string&, const std::vector<std::string>& );
+void scanMap(pqxx::work&);
+bool attributeExists(pqxx::work&, const std::string&, const std::string&);
 void showNumAccesses();
 void clearIndices(pqxx::work&);
-void fork_a_child_for_index(std::string tableName, std::set<std::string>* atrs, pqxx::work& txn);
+void fork_a_child_for_index(const std::string&, std::set<std::string>* const , pqxx::work& );
 #endif
