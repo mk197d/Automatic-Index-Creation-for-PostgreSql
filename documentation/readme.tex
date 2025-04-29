@@ -152,16 +152,42 @@ For a sample run, the \texttt{\textbackslash show} command can be used to displa
 	\end{figure}
 \end{frame}
 
-\section{Next Steps}
+\section{An Auto-Indexing Technique for Databases Based on Clustering}
 
-\begin{frame}{Next Steps}
-	Firstly, we need to create a cost function, which when crosses a threshold, will give us a signal, and an index creation will begin. After this, we need to implement a simple index creation (and removal) policy, such that LRU, MRU, LFU etc. Apart from this, here is the list of papers, which we are planning to read, and will implement the ideas of one of them:
+\begin{frame}{An Auto-Indexing Technique for Databases Based on Clustering}
 	\begin{itemize}
-		\item A tool for automatic index selection in Database Management Systems
-		\item Automatic Index Selection in RDBMS by Exploring Query Execution Plan Space
-		\item Automated Database Indexing Using Model-Free Reinforcement Learning
+		\item Automate the physical design so that the task of the database administrator (DBA) is minimized.
+		\item The first category is external tools which use linear programming optimization techniques and other cost minimization techniques to solve the Index Selection Problem.
+		\item The second category is the tools that utilize the query optimizer to give cost estimates for various index
+		configurations and suggest a configuration with the least cost estimation.
+		\item In this technique the optimizer is invoked only once for each query in the workload to choose the final set of indexes from a set of externally determined index configurations.
+		\item 
 	\end{itemize}
 \end{frame}
+
+\begin{frame}{Identifying Candidate Indexes}
+	\begin{itemize}
+		\item A query attribute matrix is created.
+		\item The presence of an indexable attribute is created by 1 and absence by a 0.
+		\item The condition applied is:
+		
+		\texttt{Freq > threshold1 OR Freq * T > threshold2}
+		\item \texttt{Freq} is the frequency of each indexable attribute in the workload and \texttt{T} is proportional to the size of the table in rows to which the column belongs.
+		\item Weights of 3, 2, 1 are given to the columns occurring in a {\tt WHERE} clause, {\tt GROUP BY} or {\tt ORDER BY} clauses and aggregate functions, respectively.
+		\item 
+	\end{itemize}
+\end{frame}
+
+% \section{Next Steps}
+
+% \begin{frame}{Next Steps}
+% 	Firstly, we need to create a cost function, which when crosses a threshold, will give us a signal, and an index creation will begin. After this, we need to implement a simple index creation (and removal) policy, such that LRU, MRU, LFU etc. Apart from this, here is the list of papers, which we are planning to read, and will implement the ideas of one of them:
+% 	\begin{itemize}
+% 		\item A tool for automatic index selection in Database Management Systems
+% 		\item Automatic Index Selection in RDBMS by Exploring Query Execution Plan Space
+% 		\item Automated Database Indexing Using Model-Free Reinforcement Learning
+% 	\end{itemize}
+% \end{frame}
 
 \begin{frame}
     \Huge{\centerline{\bf Thank You}}
