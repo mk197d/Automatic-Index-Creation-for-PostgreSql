@@ -19,6 +19,6 @@ void scanMap(pqxx::work&);
 bool attributeExists(pqxx::work&, const std::string&, const std::string&);
 void showNumAccesses();
 void clearIndices(pqxx::work&);
-void fork_a_child_for_index(const std::string&, std::set<std::string>* const , pqxx::work);
+void fork_a_child_for_index(const std::string&, std::set<std::string>* const , pqxx::work&);
 void printRowCounts(pqxx::work& txn);
 #endif
