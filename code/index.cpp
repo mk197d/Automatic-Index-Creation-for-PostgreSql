@@ -251,7 +251,10 @@ void fork_a_child_for_index(const std::string& tableName, std::set<std::string>*
             std::string query = "CREATE INDEX IF NOT EXISTS " + txn1.quote_name(idxName) + " ON " + txn1.quote_name(tableName) + " (" + colList + ");";
     
             txn1.exec0(query);
-            std::cout << "Index created for " << tableName << "(" << colList << ")\n";
+            std::cout << "Index (" << idxName << ") created for " << tableName << "(" << colList << ")\n";
+
+            // Clear indices which are too old
+            clearIndices(txn1);
         } 
         catch (const std::exception& e) {
             std::cerr << "Failed to create index: " << e.what() << '\n';
@@ -310,18 +313,14 @@ void clearIndices(pqxx::work& txn){
             indices.erase(indices.begin(), it);
             if (indicesToDelete.size() == 0) break;
             try {
-            
                 for (const auto& name : indicesToDelete) {
                     txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
+                    std::cout << name->indexName << " index deleted from DB.\n";
                 }
-            
-                // txn.commit();
-                std::cout << "Expired indices removed from DB.\n";
             } 
             catch (const std::exception& e) {
                 std::cerr << "Failed to delete from DB: " << e.what() << '\n';
-            }
-                        
+            }  
             break;
         }
         case POLICY::P2:{
