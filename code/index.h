@@ -2,7 +2,8 @@
 #define INDEX_H
 #include "keywords.h"
 #include "datastructures.hh"
-#define THRESHOLD 10
+#define THRESHOLD1 10
+#define THRESHOLD2 100
 typedef std::pair<std::string,std::string> pair_t;
 typedef std::map<pair_t,int> matrix_t;
 extern std::map<std::string, KeywordType> keyword_map;
@@ -19,4 +20,5 @@ bool attributeExists(pqxx::work&, const std::string&, const std::string&);
 void showNumAccesses();
 void clearIndices(pqxx::work&);
 void fork_a_child_for_index(const std::string&, std::set<std::string>* const , pqxx::work& );
+void printRowCounts(pqxx::work& txn);
 #endif

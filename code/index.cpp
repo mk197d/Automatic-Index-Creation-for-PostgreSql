@@ -9,6 +9,10 @@
 */
 matrix_t frequencyMap;
 
+static int last_T_updated = -1;
+std::map<std::string, int> num_rows_for_each_table;
+
+
 std::map<std::string, KeywordType> keyword_map = {
     {"SELECT", KeywordType::SELECT},
     {"INSERT", KeywordType::INSERT},
@@ -82,7 +86,12 @@ void updateMap(const std::string& tableName,const std::vector<std::string>& attr
 void scanMap(pqxx::work& txn){
     std::set<std::string>* const attrs = new std::set<std::string>();
     for (auto [u,v] : frequencyMap){
-        if (v >= THRESHOLD){
+        bool condition = (v >= THRESHOLD1);
+        if (num_rows_for_each_table.count(u.first))
+        {
+            condition = (condition || ((v*num_rows_for_each_table[u.first]) >= THRESHOLD2));
+        }
+        if (condition){
             attrs->insert(u.second);
             fork_a_child_for_index(u.first,attrs,txn);
         }
@@ -90,6 +99,16 @@ void scanMap(pqxx::work& txn){
 }
 
 void indexCreation(pqxx::work& txn, std::string const & query) {
+    if (last_T_updated == -1)
+    {
+        printRowCounts(txn);
+        last_T_updated = 0;
+    }
+    else if (current_timestamp % 50 == 0)
+    {
+        printRowCounts(txn);
+        last_T_updated = current_timestamp;
+    }
     if (!existing_child_processes.empty())
     {
         std::set<pid_t> finished_children;
@@ -313,5 +332,35 @@ void clearIndices(pqxx::work& txn){
         }
         default:
             break;
+    }
+}
+
+void printRowCounts(pqxx::work& txn) {
+    try {
+        std::string query = R"(
+            SELECT relname 
+            FROM pg_class 
+            WHERE relkind = 'r' 
+              AND relnamespace IN (
+                SELECT oid FROM pg_namespace 
+                WHERE nspname NOT IN ('pg_catalog', 'information_schema')
+              )
+        )";
+
+        pqxx::result tables = txn.exec(query);
+
+        for (const auto& row : tables) {
+            std::string tableName = row[0].as<std::string>();
+            try {
+                pqxx::result countResult = txn.exec("SELECT COUNT(*) FROM " + txn.quote_name(tableName));
+                num_rows_for_each_table[tableName] = countResult[0][0].as<int64_t>();
+                // std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
+            } catch (const std::exception& e) {
+                // std::cerr << "Failed to get row count for table " << tableName 
+                //           << ": " << e.what() << std::endl;
+            }
+        }
+    } catch (const std::exception& e) {
+        // std::cerr << "Error fetching table list: " << e.what() << std::endl;
     }
 }
