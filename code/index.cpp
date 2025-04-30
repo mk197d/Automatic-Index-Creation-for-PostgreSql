@@ -73,6 +73,7 @@ std::map<std::string, KeywordType> keyword_map = {
 };
 
 void updateMap(const std::string& tableName,const std::vector<std::string>& attributes){
+    if (attributes.size() == 0) return;
     for (int i = 0 ; i < attributes.size() ; i++){
         if (frequencyMap.find({tableName,attributes[i]}) != frequencyMap.end()){
             frequencyMap[{tableName,attributes[i]}]++;
@@ -180,6 +181,8 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
             
             } 
         }
+        
+        if (attributes.size() == 0) continue;
         updateMap(tableName,attributes);
         // fork_a_child_for_index(tableName, atrs, txn);
         scanMap(txn, query);

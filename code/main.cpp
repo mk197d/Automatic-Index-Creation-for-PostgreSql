@@ -7,7 +7,7 @@ POLICY p;
 int main() {
     std::string hostname = "localhost";
     std::string port = "5432";
-    std::string database = "ecommerce";
+    std::string database = "ImDB";
     std::string username = "test";
     std::string password = "test";
 
