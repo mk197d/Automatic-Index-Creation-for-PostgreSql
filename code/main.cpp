@@ -4,13 +4,13 @@
 extern int current_timestamp;
 POLICY p;
 
-int main() {
-    std::string hostname = "localhost";
-    std::string port = "5432";
-    std::string database = "imdb";
-    std::string username = "test";
-    std::string password = "test";
+std::string hostname = "localhost";
+std::string port = "5432";
+std::string database = "imdb";
+std::string username = "test";
+std::string password = "test";
 
+int main() {
     try {
         pqxx::connection C("dbname=" + database + " user=" + username + " password=" + password +
                      " host=" + hostname + " port=" + port);
