@@ -83,8 +83,9 @@ void updateMap(const std::string& tableName,const std::vector<std::string>& attr
     }
 }
 
-void scanMap(pqxx::work& txn){
-    std::set<std::string>* const attrs = new std::set<std::string>();
+void scanMap(pqxx::work& txn, std::string const & query){
+    std::set<std::string>* attrs = new std::set<std::string>();
+    std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
@@ -93,8 +94,13 @@ void scanMap(pqxx::work& txn){
         }
         if (condition){
             attrs->insert(u.second);
-            fork_a_child_for_index(u.first,attrs,txn);
+            double cost = get_hypo_cost(query,u.first,attrs);
+            costMap.push_back({cost,{u.first,attrs}});
         }
+    }
+    std::sort(costMap.begin(), costMap.end());
+    for (int i = costMap.size()-1 ; i >= costMap.size()/2; i--) {
+        fork_a_child_for_index(costMap[i].second.first, costMap[i].second.second, txn);
     }
 }
 
@@ -176,11 +182,13 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
         }
         updateMap(tableName,attributes);
         // fork_a_child_for_index(tableName, atrs, txn);
-        scanMap(txn);
+        scanMap(txn, query);
     }
 
     tempParseFile.close();
 }
+
+
 
 void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
 {
@@ -363,4 +371,40 @@ void printRowCounts(pqxx::work& txn) {
     } catch (const std::exception& e) {
         // std::cerr << "Error fetching table list: " << e.what() << std::endl;
     }
+}
+
+
+double get_hypo_cost(std::string query, std::string tableName, std::set<std::string>* const atrs)
+{
+    double cost = 0;
+    try {
+        // std::string query = "SELECT * FROM testable WHERE id = 5";
+        std::string indexStmt = "CREATE INDEX ON ";
+        indexStmt += tableName + " (";
+        for (auto it = atrs->begin(); it != atrs->end(); ++it) {
+            indexStmt += *it;
+            if (std::next(it) != atrs->end())
+                indexStmt += ", ";
+        }
+        indexStmt += ")";
+        std::string command = "python3 get_cost.py \"" + query + "\" \"" + indexStmt + "\"";
+
+        FILE* pipe = popen(command.c_str(), "r");
+        if (!pipe) {
+            std::cerr << "Failed to run optimizer script." << std::endl;
+            return cost;
+        }
+
+        char buffer[128];
+        std::string result = "";
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            result += buffer;
+        }
+        pclose(pipe);
+        cost = std::stod(result);
+    }
+    catch (const std::exception& e) {
+    }
+
+    return cost;
 }
