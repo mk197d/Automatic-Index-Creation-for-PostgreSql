@@ -73,6 +73,8 @@ std::map<std::string, KeywordType> keyword_map = {
 };
 
 void updateMap(const std::string& tableName,const std::vector<std::string>& attributes){
+    std::cout << tableName << std::endl;
+    std::cout << attributes.size() << std::endl;
     if (attributes.size() == 0) return;
     for (int i = 0 ; i < attributes.size() ; i++){
         if (frequencyMap.find({tableName,attributes[i]}) != frequencyMap.end()){
@@ -88,6 +90,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
     std::set<std::string>* attrs = new std::set<std::string>();
     std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
+        std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
         {
@@ -172,7 +175,7 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
         std::istringstream attrStream(attributesStr);
         std::string attribute;
         std::vector<std::string> attributes;
-        while (std::getline(attrStream, attribute, ',')) {            
+        while (std::getline(attrStream, attribute, ',')) { 
             attribute.erase(std::remove(attribute.begin(), attribute.end(), '\''), attribute.end());
             attribute.erase(std::remove(attribute.begin(), attribute.end(), ' '), attribute.end());
             if(tableName != attribute && attributeExists(txn, tableName, attribute)){
@@ -181,7 +184,7 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
             
             } 
         }
-        
+        // std::cout << attributes.size() << std::endl;
         if (attributes.size() == 0) continue;
         updateMap(tableName,attributes);
         // fork_a_child_for_index(tableName, atrs, txn);
@@ -269,9 +272,14 @@ void showNumAccesses()
 bool attributeExists(pqxx::work& txn, const std::string &relationName, const std::string &attributeName) {
     try {
         // Query the information_schema.columns table to check if the attribute exists
+        std::string attrName = attributeName;
+        std::string tableName = relationName;
+        std::transform(attrName.begin(), attrName.end(), attrName.begin(), ::tolower); 
+        std::transform(tableName.begin(), tableName.end(), tableName.begin(), ::tolower); 
+
         std::string query = "SELECT COUNT(*) FROM information_schema.columns "
-                           "WHERE table_name = '" + relationName + "' "
-                           "AND column_name = '" + attributeName + "'";
+                           "WHERE table_name = '" + tableName + "' "
+                           "AND column_name = '" + attrName + "'";
         
         pqxx::result R = txn.exec(query);
         
