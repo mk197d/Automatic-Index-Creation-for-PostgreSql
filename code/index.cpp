@@ -251,7 +251,7 @@ void fork_a_child_for_index(const std::string& tableName, std::set<std::string>*
             std::string query = "CREATE INDEX IF NOT EXISTS " + txn1.quote_name(idxName) + " ON " + txn1.quote_name(tableName) + " (" + colList + ");";
     
             txn1.exec0(query);
-            std::cout << "Index '" << idxName << "' created on table '" << tableName << "'.\n";
+            std::cout << "Index created for " << tableName << "(" << colList << ")\n";
         } 
         catch (const std::exception& e) {
             std::cerr << "Failed to create index: " << e.what() << '\n';
