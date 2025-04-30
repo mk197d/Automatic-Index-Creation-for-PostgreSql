@@ -91,6 +91,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
     std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
         std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
+        std::cout << v << " " << (v*num_rows_for_each_table[u.first]) << std::endl;
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
         {
@@ -102,8 +103,12 @@ void scanMap(pqxx::work& txn, std::string const & query){
             costMap.push_back({cost,{u.first,attrs}});
         }
     }
+    std::cout << "Cost Map Size: " << costMap.size() << std::endl;
+    if (costMap.size() == 0) return;
     std::sort(costMap.begin(), costMap.end());
-    for (int i = costMap.size()-1 ; i >= costMap.size()/2; i--) {
+    std::reverse(costMap.begin(), costMap.end());
+    for (int i = 0 ; i < (costMap.size() + 1)/2; i++) {
+        std::cout << "Cost Map Size: " << costMap.size() << std::endl;
         fork_a_child_for_index(costMap[i].second.first, costMap[i].second.second, txn);
     }
 }
@@ -199,6 +204,8 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
 void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
 {
     pid_t child = fork();
+    if (child == 0) exit(1);
+    child = 0;
     if (child == 0)
     {
         if (indexExists(tableName,atrs)){
@@ -246,6 +253,7 @@ void fork_a_child_for_index(const std::string& tableName, std::set<std::string>*
                 std::cerr << "Failed to create index: " << e.what() << '\n';
             }        
         }
+        // exit(0);
     }
     else 
     {
@@ -373,7 +381,7 @@ void printRowCounts(pqxx::work& txn) {
             try {
                 pqxx::result countResult = txn.exec("SELECT COUNT(*) FROM " + txn.quote_name(tableName));
                 num_rows_for_each_table[tableName] = countResult[0][0].as<int64_t>();
-                // std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
+                std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
             } catch (const std::exception& e) {
                 // std::cerr << "Failed to get row count for table " << tableName 
                 //           << ": " << e.what() << std::endl;

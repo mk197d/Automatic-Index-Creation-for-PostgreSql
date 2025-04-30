@@ -52,7 +52,8 @@ def extract_relations_and_attributes(sql_query):
     
     # Print the results
     for table_name, columns in relations.items():
-        print(f"{table_name}: {columns}")
+        lower_columns = [col.lower() for col in columns]
+        print(f"{table_name.lower()}: {lower_columns}")
     
     return relations
 
