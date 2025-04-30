@@ -201,66 +201,136 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
 
 
 
+// void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
+// {
+//     pid_t child = fork();
+//     if (child == 0) exit(1);
+//     child = 0;
+//     if (child == 0)
+//     {
+//         if (indexExists(tableName,atrs)){
+//             updateIndexEntry(tableName,atrs);
+//         }
+//         else {
+//             IndexEntry* entry = new IndexEntry(tableName,atrs);
+//             indices.push_back(entry);
+    
+//             try {
+//                 std::set<std::string> cols = *atrs;
+        
+//                 std::string idxName = entry->indexName;
+//                 if (atrs->empty()){
+//                     std::string pkQuery = R"(
+//                         SELECT a.attname
+//                         FROM pg_index i
+//                         JOIN pg_class c ON c.oid = i.indrelid
+//                         JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+//                         WHERE i.indisprimary AND c.relname = $1;
+//                     )";
+        
+//                     pqxx::result r = txn.exec_params(pkQuery, tableName);
+//                     for (const auto& row : r) {
+//                         cols.insert(row[0].as<std::string>());
+//                     }
+        
+//                     if (cols.empty()) {
+//                         throw std::runtime_error("No columns specified and no primary key found.");
+//                     }
+//                 }
+//                 std::string colList;
+//                 for (auto it = cols.begin(); it != cols.end(); ++it) {
+//                     colList += txn.quote_name(*it);
+//                     if (std::next(it) != cols.end())
+//                         colList += ", ";
+//                 }        
+//                 std::string query = "CREATE INDEX IF NOT EXISTS " + txn.quote_name(idxName) + " ON " + txn.quote_name(tableName) + " (" + colList + ");";
+        
+//                 txn.exec0(query);
+//                 // txn.commit();
+//                 std::cout << "Index '" << idxName << "' created on table '" << tableName << "'.\n";
+//             } 
+//             catch (const std::exception& e) {
+//                 std::cerr << "Failed to create index: " << e.what() << '\n';
+//             }        
+//         }
+//         // exit(0);
+//     }
+//     else 
+//     {
+//         existing_child_processes.insert(child);
+//     }
+    
+// }
+
 void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
 {
     pid_t child = fork();
-    if (child == 0) exit(1);
-    child = 0;
-    if (child == 0)
-    {
-        if (indexExists(tableName,atrs)){
-            updateIndexEntry(tableName,atrs);
-        }
-        else {
-            IndexEntry* entry = new IndexEntry(tableName,atrs);
-            indices.push_back(entry);
-    
-            try {
-                std::set<std::string> cols = *atrs;
-        
-                std::string idxName = entry->indexName;
-                if (atrs->empty()){
-                    std::string pkQuery = R"(
-                        SELECT a.attname
-                        FROM pg_index i
-                        JOIN pg_class c ON c.oid = i.indrelid
-                        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
-                        WHERE i.indisprimary AND c.relname = $1;
-                    )";
-        
-                    pqxx::result r = txn.exec_params(pkQuery, tableName);
-                    for (const auto& row : r) {
-                        cols.insert(row[0].as<std::string>());
-                    }
-        
-                    if (cols.empty()) {
-                        throw std::runtime_error("No columns specified and no primary key found.");
-                    }
-                }
-                std::string colList;
-                for (auto it = cols.begin(); it != cols.end(); ++it) {
-                    colList += txn.quote_name(*it);
-                    if (std::next(it) != cols.end())
-                        colList += ", ";
-                }        
-                std::string query = "CREATE INDEX IF NOT EXISTS " + txn.quote_name(idxName) + " ON " + txn.quote_name(tableName) + " (" + colList + ");";
-        
-                txn.exec0(query);
-                // txn.commit();
-                std::cout << "Index '" << idxName << "' created on table '" << tableName << "'.\n";
-            } 
-            catch (const std::exception& e) {
-                std::cerr << "Failed to create index: " << e.what() << '\n';
-            }        
-        }
-        // exit(0);
+    if (child < 0) {
+        perror("fork failed");
+        return;
     }
-    else 
-    {
+
+    if (child == 0) {
+        // Child process
+        try {
+            std::string hostname = "localhost";
+            std::string port = "5432";
+            std::string database = "imdb";
+            std::string username = "test";
+            std::string password = "test";
+
+            pqxx::connection conn("dbname=" + database + " user=" + username + " password=" + password + " host=" + hostname + " port=" + port);
+            // pqxx::connection conn("dbname=yourdb user=youruser");  // Use correct connection string
+            pqxx::work txn1(conn);
+
+            std::set<std::string> cols = *atrs;
+
+            if (atrs->empty()) {
+                std::string pkQuery = R"(
+                    SELECT a.attname
+                    FROM pg_index i
+                    JOIN pg_class c ON c.oid = i.indrelid
+                    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+                    WHERE i.indisprimary AND c.relname = $1;
+                )";
+
+                pqxx::result r = txn1.exec_params(pkQuery, tableName);
+                for (const auto& row : r) {
+                    cols.insert(row[0].as<std::string>());
+                }
+
+                if (cols.empty()) {
+                    throw std::runtime_error("No columns specified and no primary key found.");
+                }
+            }
+
+            std::string idxName = "idx_" + tableName; // or generate as needed
+            std::string colList;
+            for (auto it = cols.begin(); it != cols.end(); ++it) {
+                colList += txn1.quote_name(*it);
+                if (std::next(it) != cols.end())
+                    colList += ", ";
+            }
+
+            std::string query = "CREATE INDEX IF NOT EXISTS " + txn1.quote_name(idxName) +
+                                " ON " + txn1.quote_name(tableName) + " (" + colList + ");";
+
+            txn1.exec0(query);
+            txn1.commit();
+
+            std::cout << "Index '" << idxName << "' created on table '" << tableName << "' by child process.\n";
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Child process failed to create index: " << e.what() << '\n';
+        }
+
+        exit(0);
+    } else {
+        // Parent process
         existing_child_processes.insert(child);
     }
-    
 }
+
 
 void showNumAccesses()
 {
