@@ -9,6 +9,9 @@
 */
 matrix_t frequencyMap;
 
+const int THRESHOLD1 = 10;
+int THRESHOLD2 = 0;
+
 static int last_T_updated = -1;
 std::map<std::string, int> num_rows_for_each_table;
 
@@ -96,7 +99,6 @@ void scanMap(pqxx::work& txn, std::string const & query){
     std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
         std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
-        std::cout << v << " " << (v*num_rows_for_each_table[u.first]) << std::endl;
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
         {
@@ -113,7 +115,6 @@ void scanMap(pqxx::work& txn, std::string const & query){
     std::sort(costMap.begin(), costMap.end());
     std::reverse(costMap.begin(), costMap.end());
     for (int i = 0 ; i < (costMap.size() + 1)/2; i++) {
-        std::cout << "Cost Map Size: " << costMap.size() << std::endl;
         fork_a_child_for_index(costMap[i].second.first, costMap[i].second.second, txn);
     }
 }
@@ -197,7 +198,6 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
         // std::cout << attributes.size() << std::endl;
         if (attributes.size() == 0) continue;
         updateMap(tableName,attributes);
-        // fork_a_child_for_index(tableName, atrs, txn);
         scanMap(txn, query);
     }
 
@@ -266,14 +266,6 @@ void fork_a_child_for_index(const std::string& tableName, std::set<std::string>*
 
 void showNumAccesses()
 {
-    // for (auto & tableName: count_of_num_accesses)
-    // {
-    //     std::cout << "Table name: " << tableName.first << std::endl;
-    //     for (const auto& a : tableName.second) {
-    //         std::cout << a.first << " " << a.second << std::endl;
-    //     }
-    //     std::cout << "\n";
-    // }
     for (auto [u,v] : frequencyMap){
         std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
     }
@@ -352,7 +344,6 @@ void clearIndices(pqxx::work& txn){
                     txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
                 }
             
-                // txn.commit();
                 std::cout << "Expired indices removed from DB.\n";
             } 
             catch (const std::exception& e) {
@@ -378,19 +369,25 @@ void printRowCounts(pqxx::work& txn) {
 
         pqxx::result tables = txn.exec(query);
 
+        THRESHOLD2 = 0;
         for (const auto& row : tables) {
             std::string tableName = row[0].as<std::string>();
             try {
                 pqxx::result countResult = txn.exec("SELECT COUNT(*) FROM " + txn.quote_name(tableName));
                 num_rows_for_each_table[tableName] = countResult[0][0].as<int64_t>();
-                std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
+                // std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
+                THRESHOLD2 += countResult[0][0].as<int64_t>();
+
             } catch (const std::exception& e) {
-                // std::cerr << "Failed to get row count for table " << tableName 
-                //           << ": " << e.what() << std::endl;
             }
         }
+
+        if (tables.size() > 0) {
+            THRESHOLD2 /= tables.size();
+        }
+
+        std::cout << "THRESHOLD2: " << THRESHOLD2 << std::endl;
     } catch (const std::exception& e) {
-        // std::cerr << "Error fetching table list: " << e.what() << std::endl;
     }
 }
 
