@@ -182,7 +182,7 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
     tempParseFile.close();
 }
 
-void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work& txn)
+void fork_a_child_for_index(const std::string& tableName, std::set<std::string>* const atrs, pqxx::work txn)
 {
     pid_t child = fork();
     if (child == 0)
