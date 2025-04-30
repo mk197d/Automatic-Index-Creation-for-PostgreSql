@@ -3,7 +3,7 @@
 #include "keywords.h"
 #include "datastructures.hh"
 #define THRESHOLD1 10
-#define THRESHOLD2 100
+#define THRESHOLD2 60
 typedef std::pair<std::string,std::string> pair_t;
 typedef std::map<pair_t,int> matrix_t;
 extern std::map<std::string, KeywordType> keyword_map;
