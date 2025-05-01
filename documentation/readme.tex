@@ -268,7 +268,7 @@
     We have implemented two policies for index eviction:
     \begin{itemize}
         \item \textbf{Policy P1: Time-based Eviction} \\
-        Indices that are older than a threshold (5 seconds) are removed from the list and dropped from the database. This ensures that short-lived, potentially less useful indices are cleaned up promptly.
+        Indices that are older than a threshold (5 discrete events) are removed from the list and dropped from the database. This ensures that short-lived, potentially less useful indices are cleaned up promptly.
 
         \item \textbf{Policy P2: Usage-based Eviction} \\
         Indices are evicted if their age (current\_timestamp - create\_time) is more than four times the number of accesses. This removes infrequently used indices that have become stale, balancing age and usage.
