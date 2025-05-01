@@ -98,7 +98,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
     std::set<std::string>* attrs = new std::set<std::string>();
     std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
-        std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
+        // std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
         {
@@ -110,7 +110,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
             costMap.push_back({cost,{u.first,attrs}});
         }
     }
-    std::cout << "Cost Map Size: " << costMap.size() << std::endl;
+    // std::cout << "Cost Map Size: " << costMap.size() << std::endl;
     if (costMap.size() == 0) return;
     std::sort(costMap.begin(), costMap.end());
     std::reverse(costMap.begin(), costMap.end());
@@ -244,13 +244,16 @@ void fork_a_child_for_index(const std::string& tableName, std::set<std::string>*
             }
             std::string colList;
             for (auto it = cols.begin(); it != cols.end(); ++it) {
-                colList += txn1.quote_name(*it);
+                colList += (*it);
                 if (std::next(it) != cols.end())
                     colList += ", ";
             }        
-            std::string query = "CREATE INDEX IF NOT EXISTS " + txn1.quote_name(idxName) + " ON " + txn1.quote_name(tableName) + " (" + colList + ");";
-    
-            txn1.exec0(query);
+            // std::string query = "CREATE INDEX IF NOT EXISTS " + txn1.quote_name(idxName) + " ON " + txn1.quote_name(tableName) + " (" + colList + ");";
+            std::string query = "CREATE INDEX IF NOT EXISTS " + idxName + " ON " + tableName + " (" + colList + ");"; 
+            // txn1.exec0(query);
+            pqxx::result R = txn1.exec(query);
+            printResult(R);
+            txn1.commit();
             std::cout << "Index (" << idxName << ") created for " << tableName << "(" << colList << ")\n";
 
             // Clear indices which are too old
@@ -314,7 +317,7 @@ void clearIndices(pqxx::work& txn){
             if (indicesToDelete.size() == 0) break;
             try {
                 for (const auto& name : indicesToDelete) {
-                    txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
+                    txn.exec("DROP INDEX IF EXISTS " + name->indexName + ";");
                     std::cout << name->indexName << " index deleted from DB.\n";
                 }
             } 
@@ -340,7 +343,7 @@ void clearIndices(pqxx::work& txn){
             try {
             
                 for (const auto& name : indicesToDelete) {
-                    txn.exec("DROP INDEX IF EXISTS " + txn.quote_name(name->indexName) + ";");
+                    txn.exec("DROP INDEX IF EXISTS " + name->indexName + ";");
                 }
             
                 std::cout << "Expired indices removed from DB.\n";
@@ -372,7 +375,7 @@ void printRowCounts(pqxx::work& txn) {
         for (const auto& row : tables) {
             std::string tableName = row[0].as<std::string>();
             try {
-                pqxx::result countResult = txn.exec("SELECT COUNT(*) FROM " + txn.quote_name(tableName));
+                pqxx::result countResult = txn.exec("SELECT COUNT(*) FROM " + tableName);
                 num_rows_for_each_table[tableName] = countResult[0][0].as<int64_t>();
                 // std::cout << "Table: " << tableName << " | Row Count: " << countResult[0][0].as<int64_t>() << std::endl;
                 THRESHOLD2 += countResult[0][0].as<int64_t>();
@@ -385,7 +388,7 @@ void printRowCounts(pqxx::work& txn) {
             THRESHOLD2 /= tables.size();
         }
 
-        std::cout << "THRESHOLD2: " << THRESHOLD2 << std::endl;
+        // std::cout << "THRESHOLD2: " << THRESHOLD2 << std::endl;
     } catch (const std::exception& e) {
     }
 }

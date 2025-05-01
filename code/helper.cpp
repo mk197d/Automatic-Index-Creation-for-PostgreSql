@@ -34,7 +34,7 @@ void executeAndPrintQuery(pqxx::connection &C, const std::string &query) {
 
         // Execute the query inside the same transaction
         pqxx::result R = txn.exec(query);
-        // printResult(R);  // Print the result of the query
+        printResult(R);  // Print the result of the query
 
         // Perform index cleanup (if needed) without committing the transaction
         // clearIndices(txn); // Not required currently
