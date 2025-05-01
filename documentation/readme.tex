@@ -314,6 +314,29 @@
         % \label{fig:enter-label}
     \end{figure}
 \end{frame}
+
+\begin{frame}{Run Comparison on Batched Queries}
+	\begin{figure}
+        \centering
+        \includegraphics[width=0.8\linewidth]{../images/Screenshot from 2025-05-01 15-33-39.png}
+        \begin{table}[ht]
+			\centering
+			\caption{Execution Time vs Threshold1 (with and without indexing)}
+			\begin{tabular}{|c|c|c|}
+			\hline
+			\textbf{Threshold1} & \textbf{Execution Time (ms)} & \textbf{Indexing Status} \\
+			\hline
+			2   & 41.678  & With Index \\
+			5   & 43.365  & With Index \\
+			10  & 45.508  & With Index \\
+			20  & 45.318  & With Index \\
+			--  & 70.512  & Without Index \\
+			\hline
+			\end{tabular}
+			\end{table}
+			
+    \end{figure}
+\end{frame}
 \section{Conclusion and Future Work}
 \begin{frame}{Conclusion and Future Work}
 	\begin{itemize}
