@@ -193,7 +193,7 @@
 			\item It also invokes the PostgreSQL query planner to compare costs of executing the current query for different candidate indices.
 			\item Index is created only if the cost savings are significant.
 		\end{itemize}
-		\item Also integrated removal of indices using 2 policies:
+		\item Also integrated removal of indices using 2 policies.
 	\end{itemize}
 \end{frame}
 
@@ -201,7 +201,7 @@
 \begin{frame}{How We Implemented It – Part 1}
 	\begin{itemize}
 		\item Used the \texttt{pqxx} C++ library to connect and interact with PostgreSQL databases.
-		\item Integrated the \texttt{sqlparse} Python library to parse complex SQL queries and extract attribute-level access details.
+		\item Integrated the \texttt{sqlparse} Python library to parse complex SQL queries and extract attribute-level access details (we ignore the attribiutes in the \texttt{SELECT} clause).
 		\item Designed custom data structures to:
 		\begin{itemize}
 			\item Maintain per-query attribute access statistics.
@@ -254,6 +254,7 @@
 		\end{itemize}
 	
 		\item The top 50\% lowest cost of the candidate indices become the final indices and index is created for them in a child process (if not already).
+		\item Apart from this, we have also added an \texttt{up arrow} feature which helps user to naviage to the previous queries.
 	\end{itemize}
 \end{frame}
 
