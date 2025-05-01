@@ -12,6 +12,7 @@ Here is the directory structure of the submission:
 - `./code`: Contains the header and C++ files for the implementation, along with the Makefile. It also contains some python files for parsing, and running queries.
 - `./theory`: Contains some relevant papers and slides.  
 - `./documentation`: Contains the report as `readme.pdf`.  
+- `./images`: Contains the results and sample runs.
 - `./README.md`: Contains the instructions to run the code.
 
 ## How to setup?
