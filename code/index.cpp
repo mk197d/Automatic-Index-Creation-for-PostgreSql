@@ -95,9 +95,9 @@ void updateMap(const std::string& tableName,const std::vector<std::string>& attr
 }
 
 void scanMap(pqxx::work& txn, std::string const & query){
-    std::set<std::string>* attrs = new std::set<std::string>();
     std::vector<std::pair<double, std::pair<std::string, std::set<std::string>*>>> costMap;
     for (auto [u,v] : frequencyMap){
+        std::set<std::string>* attrs = new std::set<std::string>();
         // std::cout << "Table Name: " << u.first << " Attribute Name: " << u.second << " Number of Accesses: " << v << std::endl;
         bool condition = (v >= THRESHOLD1);
         if (num_rows_for_each_table.count(u.first))
@@ -192,9 +192,11 @@ void indexCreation(pqxx::work& txn, std::string const & query) {
             if(tableName != attribute && attributeExists(txn, tableName, attribute)){
                 // count_of_num_accesses[tableName][attribute]++; // redundant now
                 attributes.push_back(attribute);
+                std::cout << "Table Name: " << tableName << " Attribute Name: " << attribute << std::endl;
             
             } 
         }
+        std::cout << attributes.size() << std::endl;
         // std::cout << attributes.size() << std::endl;
         if (attributes.size() == 0) continue;
         updateMap(tableName,attributes);
