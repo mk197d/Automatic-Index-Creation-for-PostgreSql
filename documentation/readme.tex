@@ -44,7 +44,7 @@
 %
 % Title
 \usebeamercolor[fg]{author in sidebar}
-\title[{DBIS}]{\sc Automatic Index Creation}
+\title[{CS349 Project}]{\sc Automatic Index Creation}
 \author[\ul{Authors}]{{\bf { Saksham Rathi, Kavya Gupta, Shravan S, Mayank Kumar}}\\ {\footnotesize \hspace{0cm} (22B1003) \hspace{1cm} (22B1053) \hspace{0.5cm} (22B1054) \hspace{0.5cm} (22B0933)}}
 \institute[UTD]{\sc\small CS349: DataBase and Information Systems\\ Under Prof. Sudarshan and Prof. Suraj}
 \date[UCI]{Indian Institute of Technology Bombay \\ Spring 2024-25}
@@ -65,76 +65,117 @@
 % \end{frame}
 
 \section{Goals}
-\begin{frame}{Goals and what we implemented from a user's eyes}
+\begin{frame}{Goals of the project}
 	\begin{itemize}
 		\item Indexes are crucial for efficient query execution in relational databases.
 		\item However, developers sometimes forget to create indexes for frequently queried columns.
 		\item This can lead to repeated full relation scans, significantly degrading performance.
-		\item {\bf Goal:} Modify the application layer of PostgreSQL to detect such patterns and automatically create indexes when beneficial.
+		\item {\bf Goal:} Modify the application layer of PostgreSQL to detect such patterns and automatically create indexes when beneficial \cite{nagesh2023indexes}.
 		\item {\bf Another Goal} was to understand and implement the paper \textit{``An Auto-Indexing Technique for Databases Based on Clustering''} \cite{1333569}.
+	\end{itemize}
+\end{frame}
+
+\section{What We Implemented From User Perspective}
+\begin{frame}{What We Implemented From User Perspective}
+	\begin{itemize}
 		\item We implemented an interface that can take and submit queries from users as usual as well as automatically create (and remove) indices appropriately, thereby improving performance without any user intervention.
 	\end{itemize}
 \end{frame}
 
-\section{Frequency Calculation}
-\begin{frame}{Calculating the frequency of relations and their attributes}
-For Stage 1 of this project, we made a simple parser, which gives us the list of relations, and the attributes involved in some query. This helps us know the number of times, a particular attribute of a relation is accessed, this in turn can be used to make the decision on whether we should construct an index on that attribute.
-
-For a sample run, the \texttt{\textbackslash show} command can be used to display the frequency results.
-\end{frame}
-
-\begin{frame}{Results}
-	Here is the sample output:
-	\begin{figure}[H]
-		\includegraphics[width=1\textwidth]{../images/Screenshot 2025-04-09 at 5.37.15 PM.png}
-		\caption{Displaying the output of show command}
-	\end{figure}
-\end{frame}
-
-\section{An Auto-Indexing Technique for Databases Based on Clustering}
-
-\begin{frame}{An Auto-Indexing Technique for Databases Based on Clustering}
+\section{What All Functionalities We Implemented}
+\begin{frame}{What All Functionalities We Implemented}
 	\begin{itemize}
-		\item Automate the physical design so that the task of the database administrator (DBA) is minimized.
-		\item The first category is external tools which use linear programming optimization techniques and other cost minimization techniques to solve the Index Selection Problem.
-		\item The second category is the tools that utilize the query optimizer to give cost estimates for various index
-		configurations and suggest a configuration with the least cost estimation.
-		\item In this technique the optimizer is invoked only once for each query in the workload to choose the final set of indexes from a set of externally determined index configurations.
-		\item 
+		\item Developed a standalone C++ tool that takes SQL queries as input and performs real-time analysis.
+		\item Implemented policy from the paper \textit{``An Auto-Indexing Technique for Databases Based on Clustering''} \cite{1333569}.
+		\item The tool tracks attribute access frequencies and cost, and forks a background process to decide on index creation.
+		\item Index creation is not based on fixed thresholds alone:
+		\begin{itemize}
+			\item It also invokes the PostgreSQL query planner to compare costs of executing the current query for different candidate indices.
+			\item Index is created only if the cost savings are significant.
+		\end{itemize}
+		\item Also integrated removal of indices using 2 policies:
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Identifying Candidate Indexes}
+\section{How We Implemented It}
+\begin{frame}{How We Implemented It – Part 1}
 	\begin{itemize}
-		\item A query attribute matrix is created.
-		\item The presence of an indexable attribute is created by 1 and absence by a 0.
-		\item The condition applied is:
+		\item Used the \texttt{pqxx} C++ library to connect and interact with PostgreSQL databases.
+		\item Integrated the \texttt{sqlparse} Python library to parse complex SQL queries and extract attribute-level access details.
+		\item Designed custom data structures to:
+		\begin{itemize}
+			\item Maintain per-query attribute access statistics.
+			\item Track information about the existing (our tool made) indices.
+		\end{itemize}
+		\item Queries are handled online (i.e., one at a time), so query clustering was not required, unlike in batch-based approaches.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{How We Implemented It – Part 2}
+	\begin{itemize}
+		\item \textbf{Candidate attribute selection} is based on the following condition:
+		\vspace{-5pt}
+		\[
+		\texttt{Freq} > \texttt{threshold}_1 \quad \textbf{OR} \quad \texttt{Freq} \times T > \texttt{threshold}_2
+		\vspace{-5pt}
+		\]
+		where:
+		\begin{itemize}
+			\item \texttt{Freq} = weighted frequency of attribute usage in past queries.
+			\item \texttt{T} = number of rows in the table containing that attribute.
+		\end{itemize}
+		We fixed $\texttt{threshold}_1$ to be $10$. We took $\texttt{threshold}_2$ as the average of the size of all tables in the database (we change it every $50^{th}$ iteration).
+	
+		\item \textbf{Weighted frequency computation}:
+		\begin{itemize}
+			\item Weight = 3 if attribute is in \texttt{WHERE} clause.
+			\item Weight = 2 if in \texttt{GROUP BY} or \texttt{ORDER BY}.
+			\item Weight = 1 if used in an aggregate function (e.g., \texttt{SUM}, \texttt{COUNT}).
+		\end{itemize}
+		This helps prioritize attributes more critical to query performance.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{How We Implemented It – Part 3}
+	\begin{itemize}
+		\item Once candidate indexable attributes are identified (via frequency and weights), we use the \textbf{\texttt{hypopg}} extension for final selection.
 		
-		\texttt{Freq > threshold1 OR Freq * T > threshold2}
-		\item \texttt{Freq} is the frequency of each indexable attribute in the workload and \texttt{T} is proportional to the size of the table in rows to which the column belongs.
-		\item Weights of 3, 2, 1 are given to the columns occurring in a {\tt WHERE} clause, {\tt GROUP BY} or {\tt ORDER BY} clauses and aggregate functions, respectively.
-		\item During the clustering phase queries that are similar based on common and frequently occurring attributes are clustered together.
+		\item \texttt{hypopg} allows us to:
+		\begin{itemize}
+			\item Create \textbf{hypothetical indexes} without modifying the database.
+			\item Run the SQL query planner with these indexes as if they existed.
+			\item Retrieve the estimated query execution cost from the planner.
+		\end{itemize}
+	
+		\item This approach enables us to:
+		\begin{itemize}
+			\item Leverage PostgreSQL’s internal \textbf{statistics and heuristics}.
+			\item Avoid wasting resources on ineffective indexes.
+		\end{itemize}
+	
+		\item The top 50\% lowest cost of the candidate indices become the final indices and index is created for them in a child process (if not already).
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Candidate index suggestion}
+\section{Conclusion and Future Work}
+\begin{frame}{Conclusion and Future Work}
 	\begin{itemize}
-		\item During this phase, those candidate indexable attributes which are common to all the queries clustered together during the clustering phase are suggested as indexes.
-		\item The optimizer uses its statistics and cost estimates to choose indexes for each query.
-		\item Those indexes not being picked up by the optimizer are dropped because the presence of these unused indexes will cause an overhead of space and maintenance in the database.
+		\item We developed a real-time auto-indexing system that:
+		\begin{itemize}
+			\item Tracks attribute access patterns and frequencies.
+			\item Applies a cost-aware filtering mechanism using PostgreSQL’s planner via \texttt{hypopg}.
+			\item Automatically creates and removes indexes using adaptive policies.
+		\end{itemize}
+	
+		\vspace{0.3cm}
+		\item \textbf{Future Work:}
+		\begin{itemize}
+			\item Extend the system to handle batch workloads.
+			\item Incorporate clustering of similar queries to identify shared indexable patterns.
+			\item Explore reinforcement learning or predictive models for smarter index management.
+		\end{itemize}
 	\end{itemize}
-\end{frame}
-
-% \section{Next Steps}
-
-% \begin{frame}{Next Steps}
-% 	Firstly, we need to create a cost function, which when crosses a threshold, will give us a signal, and an index creation will begin. After this, we need to implement a simple index creation (and removal) policy, such that LRU, MRU, LFU etc. Apart from this, here is the list of papers, which we are planning to read, and will implement the ideas of one of them:
-% 	\begin{itemize}
-% 		\item A tool for automatic index selection in Database Management Systems
-% 		\item Automatic Index Selection in RDBMS by Exploring Query Execution Plan Space
-% 		\item Automated Database Indexing Using Model-Free Reinforcement Learning
-% 	\end{itemize}
-% \end{frame}
+	\end{frame}
 
 \section{References}
 \begin{frame}{References}
