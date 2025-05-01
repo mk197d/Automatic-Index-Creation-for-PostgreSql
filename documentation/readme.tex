@@ -27,13 +27,6 @@
 \newcommand{\ul}{\underline}
 \newcounter{units}
 %
-\usepackage[round]{natbib}
- \bibpunct[, ]{(}{)}{,}{a}{}{,}%
- \def\bibfont{\small}%
- \def\bibsep{\smallskipamount}%
- \def\bibhang{24pt}%
- \def\newblock{\ }%
- \def\BIBand{and}%
 %
 \setbeamercovered{dynamic}
 % Logo
@@ -65,76 +58,22 @@
 
 %TOC
 
-\begin{frame}
-	\transblindsvertical
-	\frametitle{Contents}
-	\tableofcontents[hidesubsections]
-\end{frame}
-\note[itemize]{
-\item Here's the overall structure of my talk today.
-}
-\section{Introduction}
-\begin{frame}{Introduction to the Problem Statement}
+% \begin{frame}
+% 	\transblindsvertical
+% 	\frametitle{Contents}
+% 	\tableofcontents[hidesubsections]
+% \end{frame}
 
+\section{Goals}
+\begin{frame}{Goals and what we implemented from a user's eyes}
 	\begin{itemize}
 		\item Indexes are crucial for efficient query execution in relational databases.
 		\item However, developers sometimes forget to create indexes for frequently queried columns.
 		\item This can lead to repeated full relation scans, significantly degrading performance.
 		\item {\bf Goal:} Modify the application layer of PostgreSQL to detect such patterns and automatically create indexes when beneficial.
-		\item Approach:
-		\begin{itemize}
-			\item Track full relation scans with equality predicates.
-			\item Estimate the potential benefit of an index.
-			\item Automatically trigger index creation if estimated benefit outweighs the cost.
-			\item Rejecting low selectivity columns, such as gender, which has low number of distinct values.
-		\end{itemize}
+		\item {\bf Another Goal} was to understand and implement the paper \textit{``An Auto-Indexing Technique for Databases Based on Clustering''} \cite{1333569}.
+		\item We implemented an interface that can take and submit queries from users as usual as well as automatically create (and remove) indices appropriately, thereby improving performance without any user intervention.
 	\end{itemize}
-\end{frame}
-
-\section{Directory Structure}
-\begin{frame}{Directory Structure}
-	Here is the directory structure of the submission:
-	\begin{itemize}
-		\item \texttt{./code}: Contains the header and C++ files for the implementation, along with the Makefile.
-		\item \texttt{./theory}: Contains some relevant paper and slides.
-		\item \texttt{./documentation}: Contains the report as \texttt{readme.pdf}.
-		\item \texttt{./README.md}: Contains the instructions to run the code.
-	\end{itemize}
-\end{frame}
-
-\section{When to use indices?}
-\begin{frame}{About Indices}
-	An index in SQL is a database object that improves the speed of data retrieval operations on a database table. 
-
-	\vspace{1cm}
-
-	When a query is executed, the database can use the index to quickly find the relevant rows. 
-
-	\vspace{1cm}
-
-	Without an index, the database might need to scan every row to find the data, which is much slower.
-\end{frame}
-
-\begin{frame}{When to use indices?}
-	\begin{itemize}
-		\item {\bf Frequent searches on specific columns:} Columns that are often used in WHERE clauses, JOIN conditions or as part of a SELECT query.
-		\item {\bf Large Tables with Heavy Read Operations:} Tables with a vast number of records where read operations are more common than write operations.
-		\item {\bf Columns used in JOINs:} Indexing these columns can speed up the join process.
-		\item {\bf Unique or Primary Key Constraints:} Indices improve lookup efficiency, so easy to impose such constraints.
-		\item {\bf Composite Indices:} When queries often filter on multiple columns, a composite index can be beneficial, rather than creating separate indices for each column.
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{When to use indices?}
-	There are also cases, where we should refrain from using indices, such as tables with heavy write operations, because indices slow down INSERT, UPDATE, and DELETE operations (index needs to be updated too). Similarly, in case of small tables, or columns with low selectivity (many duplicate values).
-
-	\vspace{1cm}
-
-	Indices, overall lead to improved query performance, slower write opterations, and increased storage requirements.
-	
-	\vspace{1cm}
-
-	We can analyze how a query is execueted, and whether an index is effectively used or not by using the \texttt{EXPLAIN} command in PostgreSQL. Moreover, to maintain performance, expecially in databases with frequent data modifications, we need to regularly rebuild and reorganize indices.
 \end{frame}
 
 \section{Frequency Calculation}
@@ -197,11 +136,11 @@ For a sample run, the \texttt{\textbackslash show} command can be used to displa
 % 	\end{itemize}
 % \end{frame}
 
-\begin{frame}
-    \Huge{\centerline{\bf Thank You}}
+\section{References}
+\begin{frame}{References}
+	\bibliographystyle{alpha}
+    \bibliography{ref}
 \end{frame}
-
-
 
 \end{document}
 

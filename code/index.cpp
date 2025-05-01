@@ -113,8 +113,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
     // std::cout << "Cost Map Size: " << costMap.size() << std::endl;
     if (costMap.size() == 0) return;
     std::sort(costMap.begin(), costMap.end());
-    std::reverse(costMap.begin(), costMap.end());
-    for (int i = 0 ; i < (costMap.size() + 1)/2; i++) {
+    for (int i = 0; i < (costMap.size() + 1)/2; i++) {
         fork_a_child_for_index(costMap[i].second.first, costMap[i].second.second, txn);
     }
 }
