@@ -235,8 +235,22 @@ def extract_columns(parsed, relations, aliases):
                 process_token_for_columns(subtoken)
     
     # Process all tokens
+    # for token in parsed.tokens:
+    #     process_token_for_columns(token)
+
+    select_seen = False
     for token in parsed.tokens:
+        if token.ttype is DML and token.value.upper() == 'SELECT':
+            select_seen = True
+            continue
+        if select_seen:
+            if token.ttype is Keyword and token.value.upper() == 'FROM':
+                select_seen = False
+                continue
+            continue
+        
         process_token_for_columns(token)
+
     
     # Clean up potential aliases in column lists
     for table in relations:
