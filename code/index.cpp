@@ -10,7 +10,7 @@
 matrix_t frequencyMap;
 
 const int THRESHOLD1 = 10;
-int THRESHOLD2 = 0;
+int THRESHOLD2 = 25000;
 
 static int last_T_updated = -1;
 std::map<std::string, int> num_rows_for_each_table;
@@ -86,7 +86,7 @@ void updateMap(const std::string& tableName,const std::vector<std::string>& attr
     if (attributes.size() == 0) return;
     for (int i = 0 ; i < attributes.size() ; i++){
         if (frequencyMap.find({tableName,attributes[i]}) != frequencyMap.end()){
-            frequencyMap[{tableName,attributes[i]}]++;
+            frequencyMap[{tableName,attributes[i]}] += i;
         }  
         else {
             frequencyMap.insert({{tableName,attributes[i]},1});
@@ -113,6 +113,7 @@ void scanMap(pqxx::work& txn, std::string const & query){
     // std::cout << "Cost Map Size: " << costMap.size() << std::endl;
     if (costMap.size() == 0) return;
     std::sort(costMap.begin(), costMap.end());
+    // std::reverse(costMap.begin(), costMap.end());
     for (int i = 0; i < (costMap.size() + 1)/2; i++) {
         fork_a_child_for_index(costMap[i].second.first, costMap[i].second.second, txn);
     }
