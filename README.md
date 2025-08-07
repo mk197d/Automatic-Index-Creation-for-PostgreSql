@@ -1,11 +1,5 @@
 # Automatic Index Creation
 
-## Team Members
-- Saksham Rathi (22B1003)
-- Kavya Gupta (22B1053)
-- Shravan S (22B1054)
-- Mayank Kumar (22B0933)
-
 ## Directory Structure
 Here is the directory structure of the submission:
 
